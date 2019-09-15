@@ -6,6 +6,7 @@ using LogExpFunctions, Test
 
     @test iszero(xlogy(0, 1))
     @test xlogy(2, 3) ≈ 2.0 * log(3.0)
+    @test xlogy(2, 3.0) ≈ 2.0 * log(3.0) # promoted
 end
 
 @testset "logistic & logit" begin
@@ -56,19 +57,24 @@ end
 
 @testset "log1pmx" begin
     @test iszero(log1pmx(0.0))
-    @test log1pmx(1.0) ≈ log(2.0) - 1.0
-    @test log1pmx(2.0) ≈ log(3.0) - 2.0
+    for x in [-0.3, -0.1, 0.4, 1.0, 2.0]
+        z = BigFloat(x)
+        @test log1pmx(x) ≈ Float64(log(1 + x) - x)
+    end
 end
 
 @testset "logmxp1" begin
     @test iszero(logmxp1(1.0))
-    @test logmxp1(2.0) ≈ log(2.0) - 1.0
-    @test logmxp1(3.0) ≈ log(3.0) - 2.0
+    for x in [0.1, 0.35, 0.5, 2.0, 3.0]
+        z = BigFloat(x)
+        @test logmxp1(x) ≈ Float64(log(z) - z + 1)
+    end
 end
 
 @testset "logsumexp" begin
     @test logaddexp(2.0, 3.0)     ≈ log(exp(2.0) + exp(3.0))
     @test logaddexp(10002, 10003) ≈ 10000 + logaddexp(2.0, 3.0)
+    @test logaddexp(2, 3.0)     ≈ log(exp(2.0) + exp(3.0)) # promotion
 
     @test logsumexp([1.0, 2.0, 3.0])          ≈ 3.40760596444438
     @test logsumexp((1.0, 2.0, 3.0))          ≈ 3.40760596444438
