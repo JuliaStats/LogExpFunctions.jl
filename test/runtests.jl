@@ -19,6 +19,7 @@ end
     @test iszero(log1psq(0.0))
     @test log1psq(1.0) ≈ log1p(1.0)
     @test log1psq(2.0) ≈ log1p(4.0)
+    @test log1psq(Float16(0.1)) ≈ log1p(0.01)
 end
 
 # log1pexp, log1mexp, log2mexp & logexpm1
@@ -57,7 +58,7 @@ end
 
 @testset "log1pmx" begin
     @test iszero(log1pmx(0.0))
-    for x in [-0.3, -0.1, 0.4, 1.0, 2.0]
+    for x in [-0.5, -0.3, -0.1, 0.4, 1.0, 2.0]
         z = BigFloat(x)
         @test log1pmx(x) ≈ Float64(log(1 + x) - x)
     end
