@@ -1,13 +1,33 @@
-# common facilities
+module LogExpFunctions
 
-# scalar functions
+export xlogx, xlogy, logistic, logit, log1psq, log1pexp, log1mexp, log2mexp, logexpm1,
+    log1pmx, logmxp1, logaddexp, logsubexp, logsumexp, softmax!, softmax
+
+using DocStringExtensions: SIGNATURES
+
+using Base: Math.@horner, @irrational
+
+####
+#### constants
+####
+
+@irrational loghalf -0.6931471805599453094 log(big(0.5))
+@irrational logtwo 0.6931471805599453094 log(big(2.))
+@irrational logπ   1.1447298858494001741 log(big(π))
+@irrational log2π  1.8378770664093454836 log(big(2.)*π)
+@irrational log4π  2.5310242469692907930 log(big(4.)*π)
+
+####
+#### functions
+####
+
 """
-    xlogx(x::Number)
+$(SIGNATURES)
 
-Compute `x * log(x)`, returning zero if `x` is zero.
+Return `x * log(x)` for `x ≥ 0`, handling ``x = 0`` by taking the downward limit.
 
 ```jldoctest
-julia> StatsFuns.xlogx(0)
+julia> xlogx(0)
 0.0
 ```
 """
@@ -17,12 +37,12 @@ function xlogx(x::Number)
 end
 
 """
-    xlogy(x::Number, y::Number)
+$(SIGNATURES)
 
-Compute `x * log(y)`, returning zero if `x` is zero.
+Return `x * log(y)` for `y > 0` with correct limit at ``x = 0``.
 
 ```jldoctest
-julia> StatsFuns.xlogy(0, 0)
+julia> xlogy(0, 0)
 0.0
 ```
 """
@@ -30,6 +50,20 @@ function xlogy(x::Number, y::Number)
     result = x * log(y)
     ifelse(iszero(x) && !isnan(y), zero(result), result)
 end
+
+"""
+$(SIGNATURES)
+
+The [logistic](https://en.wikipedia.org/wiki/Logistic_function) sigmoid function mapping a
+real number to a value in the interval ``[0,1]``,
+
+```math
+\\sigma(x) = \\frac{1}{e^{-x} + 1} = \\frac{e^x}{1+e^x}.
+```
+
+Its inverse is the [`logit`](@ref) function.
+"""
+logistic(x::Real) = inv(exp(-x) + one(x))
 
 # The following bounds are precomputed versions of the following abstract
 # function, but the implicit interface for AbstractFloat doesn't uniformly
@@ -41,21 +75,9 @@ end
 #     )
 # end
 
-@inline _logistic_bounds(x::Float16) = (Float16(-16.64), Float16(7.625))
-@inline _logistic_bounds(x::Float32) = (-103.27893f0, 16.635532f0)
-@inline _logistic_bounds(x::Float64) = (-744.4400719213812, 36.7368005696771)
-
-"""
-    logistic(x::Real)
-
-The [logistic](https://en.wikipedia.org/wiki/Logistic_function) sigmoid function mapping a real number to a value in the interval [0,1],
-```math
-\\sigma(x) = \\frac{1}{e^{-x} + 1} = \\frac{e^x}{1+e^x}.
-```
-
-Its inverse is the [`logit`](@ref) function.
-"""
-logistic(x::Real) = inv(exp(-x) + one(x))
+@inline _logistic_bounds(::Float16) = (Float16(-16.64), Float16(7.625))
+@inline _logistic_bounds(::Float32) = (-103.27893f0, 16.635532f0)
+@inline _logistic_bounds(::Float64) = (-744.4400719213812, 36.7368005696771)
 
 function logistic(x::Union{Float16, Float32, Float64})
     e = exp(x)
@@ -72,18 +94,20 @@ function logistic(x::Union{Float16, Float32, Float64})
 end
 
 """
-    logit(p::Real)
+$(SIGNATURES)
 
 The [logit](https://en.wikipedia.org/wiki/Logit) or log-odds transformation,
+
 ```math
 \\log\\left(\\frac{x}{1-x}\\right), \\text{where} 0 < x < 1
 ```
+
 Its inverse is the [`logistic`](@ref) function.
 """
 logit(x::Real) = log(x / (one(x) - x))
 
 """
-    log1psq(x::Real)
+$(SIGNATURES)
 
 Return `log(1+x^2)` evaluated carefully for `abs(x)` very small or very large.
 """
@@ -94,7 +118,7 @@ function log1psq(x::Union{Float32,Float64})
 end
 
 """
-    log1pexp(x::Real)
+$(SIGNATURES)
 
 Return `log(1+exp(x))` evaluated carefully for largish `x`.
 
@@ -105,41 +129,41 @@ log1pexp(x::Real) = x < 18.0 ? log1p(exp(x)) : x < 33.3 ? x + exp(-x) : oftype(e
 log1pexp(x::Float32) = x < 9.0f0 ? log1p(exp(x)) : x < 16.0f0 ? x + exp(-x) : oftype(exp(-x), x)
 
 """
-    log1mexp(x::Real)
+$(SIGNATURES)
 
 Return `log(1 - exp(x))`
 
 See:
- * Martin Maechler (2012) "Accurately Computing log(1 − exp(− |a|))",
-   http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf
+ * Martin Maechler (2012) [“Accurately Computing log(1 − exp(− |a|))”](http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf)
 
 Note: different than Maechler (2012), no negation inside parentheses
 """
 log1mexp(x::Real) = x < loghalf ? log1p(-exp(x)) : log(-expm1(x))
 
 """
-    log2mexp(x::Real)
+$(SIGNATURES)
 
 Return `log(2 - exp(x))` evaluated as `log1p(-expm1(x))`
 """
 log2mexp(x::Real) = log1p(-expm1(x))
 
 """
-    logexpm1(x::Real)
+$(SIGNATURES)
 
-Return `log(exp(x) - 1)` or the "invsoftplus" function.
-It is the inverse of [`log1pexp`](@ref) (aka "softplus").
+Return `log(exp(x) - 1)` or the “invsoftplus” function.  It is the inverse of
+[`log1pexp`](@ref) (aka “softplus”).
 """
 logexpm1(x::Real) = x <= 18.0 ? log(expm1(x)) : x <= 33.3 ? x - exp(-x) : oftype(exp(-x), x)
+
 logexpm1(x::Float32) = x <= 9f0 ? log(expm1(x)) : x <= 16f0 ? x - exp(-x) : oftype(exp(-x), x)
 
 const softplus = log1pexp
 const invsoftplus = logexpm1
 
 """
-    log1pmx(x::Float64)
+$(SIGNATURES)
 
-Return `log(1 + x) - x`
+Return `log(1 + x) - x`.
 
 Use naive calculation or range reduction outside kernel range.  Accurate ~2ulps for all `x`.
 """
@@ -164,7 +188,7 @@ function log1pmx(x::Float64)
 end
 
 """
-    logmxp1(x::Float64)
+$(SIGNATURES)
 
 Return `log(x) - x + 1` carefully evaluated.
 """
@@ -200,11 +224,11 @@ function _log1pmx_ker(x::Float64)
     r*(hxsq+w*t)-hxsq
 end
 
-
 """
-    logaddexp(x::Real, y::Real)
+$(SIGNATURES)
 
-Return `log(exp(x) + exp(y))`, avoiding intermediate overflow/undeflow, and handling non-finite values.
+Return `log(exp(x) + exp(y))`, avoiding intermediate overflow/undeflow, and handling
+non-finite values.
 """
 function logaddexp(x::Real, y::Real)
     # ensure Δ = 0 if x = y = ± Inf
@@ -215,111 +239,14 @@ end
 Base.@deprecate logsumexp(x::Real, y::Real) logaddexp(x, y)
 
 """
-    logsubexp(x, y)
+$(SIGNATURES)
 
-Return `log(abs(e^x - e^y))`, preserving numerical accuracy.
+Return `log(abs(exp(x) - exp(y)))`, preserving numerical accuracy.
 """
 logsubexp(x::Real, y::Real) = max(x, y) + log1mexp(-abs(x - y))
 
 """
-    logsumexp(X)
-
-Compute `log(sum(exp, X))` in a numerically stable way that avoids intermediate over- and
-underflow.
-
-`X` should be an iterator of real numbers. The result is computed using a single pass over
-the data.
-
-# References
-
-[Sebastian Nowozin: Streaming Log-sum-exp Computation.](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
-"""
-logsumexp(X) = _logsumexp_onepass(X)
-
-"""
-    logsumexp(X::AbstractArray{<:Real}; dims=:)
-
-Compute `log.(sum(exp.(X); dims=dims))` in a numerically stable way that avoids
-intermediate over- and underflow.
-
-The result is computed using a single pass over the data.
-
-# References
-
-[Sebastian Nowozin: Streaming Log-sum-exp Computation.](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
-"""
-logsumexp(X::AbstractArray{<:Real}; dims=:) = _logsumexp(X, dims)
-
-_logsumexp(X::AbstractArray{<:Real}, ::Colon) = _logsumexp_onepass(X)
-function _logsumexp(X::AbstractArray{<:Real}, dims)
-    # Do not use log(zero(eltype(X))) directly to avoid issues with ForwardDiff (#82)
-    FT = float(eltype(X))
-    xmax_r = reduce(_logsumexp_onepass_op, X; dims=dims, init=(FT(-Inf), zero(FT)))
-    return @. first(xmax_r) + log1p(last(xmax_r))
-end
-
-function _logsumexp_onepass(X)
-    # fallback for empty collections
-    isempty(X) && return log(sum(X))
-    return _logsumexp_onepass_result(_logsumexp_onepass_reduce(X, Base.IteratorEltype(X)))
-end
-
-# function barrier for reductions with single element and without initial element
-_logsumexp_onepass_result(x) = float(x)
-_logsumexp_onepass_result((xmax, r)::Tuple) = xmax + log1p(r)
-
-# iterables with known element type
-function _logsumexp_onepass_reduce(X, ::Base.HasEltype)
-    # do not perform type computations if element type is abstract
-    T = eltype(X)
-    isconcretetype(T) || return _logsumexp_onepass_reduce(X, Base.EltypeUnknown())
-
-    FT = float(T)
-    return reduce(_logsumexp_onepass_op, X; init=(FT(-Inf), zero(FT)))
-end
-
-# iterables without known element type
-_logsumexp_onepass_reduce(X, ::Base.EltypeUnknown) = reduce(_logsumexp_onepass_op, X)
-
-## Reductions for one-pass algorithm: avoid expensive multiplications if numbers are reduced
-
-# reduce two numbers
-function _logsumexp_onepass_op(x1, x2)
-    a = x1 == x2 ? zero(x1 - x2) : -abs(x1 - x2)
-    xmax = x1 > x2 ? oftype(a, x1) : oftype(a, x2)
-    r = exp(a)
-    return xmax, r
-end
-
-# reduce a number and a partial sum
-function _logsumexp_onepass_op(x, (xmax, r)::Tuple)
-    a = x == xmax ? zero(x - xmax) : -abs(x - xmax)
-    if x > xmax
-        _xmax = oftype(a, x)
-        _r = (r + one(r)) * exp(a)
-    else
-        _xmax = oftype(a, xmax)
-        _r = r + exp(a)
-    end
-    return _xmax, _r
-end
-_logsumexp_onepass_op(xmax_r::Tuple, x) = _logsumexp_onepass_op(x, xmax_r)
-
-# reduce two partial sums
-function _logsumexp_onepass_op((xmax1, r1)::Tuple, (xmax2, r2)::Tuple)
-    a = xmax1 == xmax2 ? zero(xmax1 - xmax2) : -abs(xmax1 - xmax2)
-    if xmax1 > xmax2
-        xmax = oftype(a, xmax1)
-        r = r1 + (r2 + one(r2)) * exp(a)
-    else
-        xmax = oftype(a, xmax2)
-        r = r2 + (r1 + one(r1)) * exp(a)
-    end
-    return xmax, r
-end
-
-"""
-    softmax!(r::AbstractArray, x::AbstractArray)
+$(SIGNATURES)
 
 Overwrite `r` with the `softmax` (or _normalized exponential_) transformation of `x`
 
@@ -343,9 +270,21 @@ function softmax!(r::AbstractArray{R}, x::AbstractArray{T}) where {R<:AbstractFl
 end
 
 """
-    softmax(x::AbstractArray{<:Real})
+$(SIGNATURES)
 
-Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function) applied to `x`
+Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function)
+applied to `x` *in place*.
 """
 softmax!(x::AbstractArray{<:AbstractFloat}) = softmax!(x, x)
+
+"""
+$(SIGNATURES)
+
+Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function)
+applied to `x`.
+"""
 softmax(x::AbstractArray{<:Real}) = softmax!(similar(x, Float64), x)
+
+include("logsumexp.jl")
+
+end # module

@@ -1,4 +1,4 @@
-using StatsFuns, Test
+using LogExpFunctions, Test
 
 @testset "xlogx & xlogy" begin
     @test iszero(xlogx(0))
@@ -8,6 +8,7 @@ using StatsFuns, Test
 
     @test iszero(xlogy(0, 1))
     @test xlogy(2, 3) ≈ 2.0 * log(3.0)
+    @test xlogy(2, 3.0) ≈ 2.0 * log(3.0) # promoted
     @test_throws DomainError xlogy(1, -1)
     @test isnan(xlogy(NaN, 2))
     @test isnan(xlogy(2, NaN))
@@ -44,6 +45,7 @@ end
     @test iszero(log1psq(0.0))
     @test log1psq(1.0) ≈ log1p(1.0)
     @test log1psq(2.0) ≈ log1p(4.0)
+    @test log1psq(Float16(0.1)) ≈ log1p(0.01)
 end
 
 # log1pexp, log1mexp, log2mexp & logexpm1
@@ -82,25 +84,30 @@ end
 
 @testset "log1pmx" begin
     @test iszero(log1pmx(0.0))
-    @test log1pmx(1.0) ≈ log(2.0) - 1.0
-    @test log1pmx(2.0) ≈ log(3.0) - 2.0
+    for x in [-0.65, -0.5, -0.3, -0.1, 0.4, 1.0, 2.0]
+        z = BigFloat(x)
+        @test log1pmx(x) ≈ Float64(log(1 + z) - z)
+    end
 end
 
 @testset "logmxp1" begin
     @test iszero(logmxp1(1.0))
-    @test logmxp1(2.0) ≈ log(2.0) - 1.0
-    @test logmxp1(3.0) ≈ log(3.0) - 2.0
+    for x in [0.1, 0.35, 0.5, 2.0, 3.0]
+        z = BigFloat(x)
+        @test logmxp1(x) ≈ Float64(log(z) - z + 1)
+    end
 end
 
 @testset "logsumexp" begin
     @test logaddexp(2.0, 3.0)     ≈ log(exp(2.0) + exp(3.0))
     @test logaddexp(10002, 10003) ≈ 10000 + logaddexp(2.0, 3.0)
+    @test logaddexp(2, 3.0)     ≈ log(exp(2.0) + exp(3.0)) # promotion
 
-    @test @inferred(logsumexp([1.0])) == 1.0
-    @test @inferred(logsumexp((x for x in [1.0]))) == 1.0
+    @test @inferred(logsumexp([1.0])) == 1
+    @test @inferred(logsumexp((x for x in [1.0]))) == 1
     @test @inferred(logsumexp([1.0, 2.0, 3.0])) ≈ 3.40760596444438
     @test @inferred(logsumexp((1.0, 2.0, 3.0))) ≈ 3.40760596444438
-    @test logsumexp([1.0, 2.0, 3.0] .+ 1000.) ≈ 1003.40760596444438
+    @test logsumexp([1.0, 2.0, 3.0]) .+ 1000. ≈ 1003.40760596444438
 
     @test @inferred(logsumexp([[1.0, 2.0, 3.0] [1.0, 2.0, 3.0] .+ 1000.]; dims=1)) ≈ [3.40760596444438 1003.40760596444438]
     @test @inferred(logsumexp([[1.0 2.0 3.0]; [1.0 2.0 3.0] .+ 1000.]; dims=2)) ≈ [3.40760596444438, 1003.40760596444438]
@@ -143,7 +150,8 @@ end
     @test isnan(logsumexp([NaN, Inf]))
     @test isnan(logsumexp([NaN, -Inf]))
 
-    # logsumexp with general iterables (issue #63)
+    # logsumexp with general iterables
+    # https://github.com/JuliaStats/StatsFuns.jl/issues/63
     xs = range(-500, stop = 10, length = 1000)
     @test @inferred(logsumexp(x for x in xs)) == logsumexp(xs)
 end
