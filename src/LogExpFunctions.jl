@@ -3,6 +3,8 @@ module LogExpFunctions
 export xlogx, xlogy, logistic, logit, log1psq, log1pexp, log1mexp, log2mexp, logexpm1,
     log1pmx, logmxp1, logaddexp, logsumexp, softmax!, softmax
 
+using DocStringExtensions: SIGNATURES
+
 using Base: Math.@horner, @irrational
 
 ####
@@ -20,29 +22,31 @@ using Base: Math.@horner, @irrational
 ####
 
 """
-    xlogx(x::Real)
+$(SIGNATURES)
 
-Return `x * log(x)` for `x ≥ 0`, handling `x = 0` by taking the downward limit.
+Return `x * log(x)` for `x ≥ 0`, handling ``x = 0`` by taking the downward limit.
 
 ```jldoctest
-julia> StatsFuns.xlogx(0)
+julia> xlogx(0)
 0.0
 ```
 """
 xlogx(x::Real) = x > zero(x) ? x * log(x) : zero(log(x))
 
 """
-    xlogy(x::Real, y::Real)
+$(SIGNATURES)
 
-Return `x * log(y)` for `y > 0` with correct limit at `x = 0`.
+Return `x * log(y)` for `y > 0` with correct limit at ``x = 0``.
 """
 xlogy(x::T, y::T) where {T<:Real} = x > zero(T) ? x * log(y) : zero(log(x))
 xlogy(x::Real, y::Real) = xlogy(promote(x, y)...)
 
 """
-    logistic(x::Real)
+$(SIGNATURES)
 
-The [logistic](https://en.wikipedia.org/wiki/Logistic_function) sigmoid function mapping a real number to a value in the interval [0,1],
+The [logistic](https://en.wikipedia.org/wiki/Logistic_function) sigmoid function mapping a
+real number to a value in the interval ``[0,1]``,
+
 ```math
 \\sigma(x) = \\frac{1}{e^{-x} + 1} = \\frac{e^x}{1+e^x}.
 ```
@@ -52,18 +56,20 @@ Its inverse is the [`logit`](@ref) function.
 logistic(x::Real) = inv(exp(-x) + one(x))
 
 """
-    logit(p::Real)
+$(SIGNATURES)
 
 The [logit](https://en.wikipedia.org/wiki/Logit) or log-odds transformation,
+
 ```math
 \\log\\left(\\frac{x}{1-x}\\right), \\text{where} 0 < x < 1
 ```
+
 Its inverse is the [`logistic`](@ref) function.
 """
 logit(x::Real) = log(x / (one(x) - x))
 
 """
-    log1psq(x::Real)
+$(SIGNATURES)
 
 Return `log(1+x^2)` evaluated carefully for `abs(x)` very small or very large.
 """
@@ -74,7 +80,7 @@ function log1psq(x::Union{Float32,Float64})
 end
 
 """
-    log1pexp(x::Real)
+$(SIGNATURES)
 
 Return `log(1+exp(x))` evaluated carefully for largish `x`.
 
@@ -85,41 +91,41 @@ log1pexp(x::Real) = x < 18.0 ? log1p(exp(x)) : x < 33.3 ? x + exp(-x) : oftype(e
 log1pexp(x::Float32) = x < 9.0f0 ? log1p(exp(x)) : x < 16.0f0 ? x + exp(-x) : oftype(exp(-x), x)
 
 """
-    log1mexp(x::Real)
+$(SIGNATURES)
 
 Return `log(1 - exp(x))`
 
 See:
- * Martin Maechler (2012) "Accurately Computing log(1 − exp(− |a|))",
-   http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf
+ * Martin Maechler (2012) [“Accurately Computing log(1 − exp(− |a|))”](http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf)
 
 Note: different than Maechler (2012), no negation inside parentheses
 """
 log1mexp(x::Real) = x < loghalf ? log1p(-exp(x)) : log(-expm1(x))
 
 """
-    log2mexp(x::Real)
+$(SIGNATURES)
 
 Return `log(2 - exp(x))` evaluated as `log1p(-expm1(x))`
 """
 log2mexp(x::Real) = log1p(-expm1(x))
 
 """
-    logexpm1(x::Real)
+$(SIGNATURES)
 
-Return `log(exp(x) - 1)` or the "invsoftplus" function.
-It is the inverse of [`log1pexp`](@ref) (aka "softplus").
+Return `log(exp(x) - 1)` or the “invsoftplus” function.  It is the inverse of
+[`log1pexp`](@ref) (aka “softplus”).
 """
 logexpm1(x::Real) = x <= 18.0 ? log(expm1(x)) : x <= 33.3 ? x - exp(-x) : oftype(exp(-x), x)
+
 logexpm1(x::Float32) = x <= 9f0 ? log(expm1(x)) : x <= 16f0 ? x - exp(-x) : oftype(exp(-x), x)
 
 const softplus = log1pexp
 const invsoftplus = logexpm1
 
 """
-    log1pmx(x::Float64)
+$(SIGNATURES)
 
-Return `log(1 + x) - x`
+Return `log(1 + x) - x`.
 
 Use naive calculation or range reduction outside kernel range.  Accurate ~2ulps for all `x`.
 """
@@ -144,7 +150,7 @@ function log1pmx(x::Float64)
 end
 
 """
-    logmxp1(x::Float64)
+$(SIGNATURES)
 
 Return `log(x) - x + 1` carefully evaluated.
 """
@@ -182,9 +188,10 @@ end
 
 
 """
-    logaddexp(x::Real, y::Real)
+$(SIGNATURES)
 
-Return `log(exp(x) + exp(y))`, avoiding intermediate overflow/undeflow, and handling non-finite values.
+Return `log(exp(x) + exp(y))`, avoiding intermediate overflow/undeflow, and handling
+non-finite values.
 """
 function logaddexp(x::T, y::T) where T<:Real
     # x or y is  NaN  =>  NaN
@@ -193,12 +200,13 @@ function logaddexp(x::T, y::T) where T<:Real
     isfinite(x) && isfinite(y) || return max(x,y)
     x > y ? x + log1p(exp(y - x)) : y + log1p(exp(x - y))
 end
+
 logaddexp(x::Real, y::Real) = logaddexp(promote(x, y)...)
 
 Base.@deprecate logsumexp(x::Real, y::Real) logaddexp(x,y)
 
 """
-    logsumexp(X)
+$(SIGNATURES)
 
 Compute `log(sum(exp, X))`, evaluated avoiding intermediate overflow/undeflow.
 
@@ -208,6 +216,7 @@ function logsumexp(X)
     isempty(X) && return log(sum(X))
     reduce(logaddexp, X)
 end
+
 function logsumexp(X::AbstractArray{T}) where {T<:Real}
     isempty(X) && return log(zero(T))
     u = maximum(X)
@@ -217,9 +226,8 @@ function logsumexp(X::AbstractArray{T}) where {T<:Real}
     end
 end
 
-
 """
-    softmax!(r::AbstractArray, x::AbstractArray)
+$(SIGNATURES)
 
 Overwrite `r` with the `softmax` (or _normalized exponential_) transformation of `x`
 
@@ -243,11 +251,19 @@ function softmax!(r::AbstractArray{R}, x::AbstractArray{T}) where {R<:AbstractFl
 end
 
 """
-    softmax(x::AbstractArray{<:Real})
+$(SIGNATURES)
 
-Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function) applied to `x`
+Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function)
+applied to `x` *in place*.
 """
 softmax!(x::AbstractArray{<:AbstractFloat}) = softmax!(x, x)
+
+"""
+$(SIGNATURES)
+
+Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function)
+applied to `x`.
+"""
 softmax(x::AbstractArray{<:Real}) = softmax!(similar(x, Float64), x)
 
 end # module
