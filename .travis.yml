@@ -20,7 +20,6 @@ git:
 #  allow_failures:
 #  - julia: nightly
 
-uncomment following lines to deploy documentation
 jobs:
   include:
     - stage: Documentation
