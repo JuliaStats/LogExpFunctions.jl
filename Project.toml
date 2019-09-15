@@ -3,6 +3,9 @@ uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
 authors = ["Tamas K. Papp <tkpapp@gmail.com>"]
 version = "0.1.1"
 
+[deps]
+DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+
 [compat]
 julia = "^1"
 
