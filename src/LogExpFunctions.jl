@@ -1,7 +1,7 @@
 module LogExpFunctions
 
 export xlogx, xlogy, logistic, logit, log1psq, log1pexp, log1mexp, log2mexp, logexpm1,
-    log1pmx, logmxp1, logaddexp, logsumexp, softmax!, softmax
+    log1pmx, logmxp1, logaddexp, logsubexp, logsumexp, softmax!, softmax
 
 using DocStringExtensions: SIGNATURES
 
@@ -25,16 +25,31 @@ using Base: Math.@horner, @irrational
 $(SIGNATURES)
 
 Return `x * log(x)` for `x ≥ 0`, handling ``x = 0`` by taking the downward limit.
+
+```jldoctest
+julia> xlogx(0)
+0.0
+```
 """
-xlogx(x::Real) = x > zero(x) ? x * log(x) : zero(log(x))
+function xlogx(x::Number)
+    result = x * log(x)
+    ifelse(iszero(x), zero(result), result)
+end
 
 """
 $(SIGNATURES)
 
 Return `x * log(y)` for `y > 0` with correct limit at ``x = 0``.
+
+```jldoctest
+julia> xlogy(0, 0)
+0.0
+```
 """
-xlogy(x::T, y::T) where {T<:Real} = x > zero(T) ? x * log(y) : zero(log(x))
-xlogy(x::Real, y::Real) = xlogy(promote(x, y)...)
+function xlogy(x::Number, y::Number)
+    result = x * log(y)
+    ifelse(iszero(x) && !isnan(y), zero(result), result)
+end
 
 """
 $(SIGNATURES)
@@ -49,6 +64,34 @@ real number to a value in the interval ``[0,1]``,
 Its inverse is the [`logit`](@ref) function.
 """
 logistic(x::Real) = inv(exp(-x) + one(x))
+
+# The following bounds are precomputed versions of the following abstract
+# function, but the implicit interface for AbstractFloat doesn't uniformly
+# enforce that all floating point types implement nextfloat and prevfloat.
+# @inline function _logistic_bounds(x::AbstractFloat)
+#     (
+#         logit(nextfloat(zero(float(x)))),
+#         logit(prevfloat(one(float(x)))),
+#     )
+# end
+
+@inline _logistic_bounds(::Float16) = (Float16(-16.64), Float16(7.625))
+@inline _logistic_bounds(::Float32) = (-103.27893f0, 16.635532f0)
+@inline _logistic_bounds(::Float64) = (-744.4400719213812, 36.7368005696771)
+
+function logistic(x::Union{Float16, Float32, Float64})
+    e = exp(x)
+    lower, upper = _logistic_bounds(x)
+    ifelse(
+        x < lower,
+        zero(x),
+        ifelse(
+            x > upper,
+            one(x),
+            e / (one(x) + e)
+        )
+    )
+end
 
 """
 $(SIGNATURES)
@@ -181,45 +224,26 @@ function _log1pmx_ker(x::Float64)
     r*(hxsq+w*t)-hxsq
 end
 
-
 """
 $(SIGNATURES)
 
 Return `log(exp(x) + exp(y))`, avoiding intermediate overflow/undeflow, and handling
 non-finite values.
 """
-function logaddexp(x::T, y::T) where T<:Real
-    # x or y is  NaN  =>  NaN
-    # x or y is +Inf  => +Inf
-    # x or y is -Inf  => other value
-    isfinite(x) && isfinite(y) || return max(x,y)
-    x > y ? x + log1p(exp(y - x)) : y + log1p(exp(x - y))
+function logaddexp(x::Real, y::Real)
+    # ensure Δ = 0 if x = y = ± Inf
+    Δ = ifelse(x == y, zero(x - y), abs(x - y))
+    max(x, y) + log1pexp(-Δ)
 end
 
-logaddexp(x::Real, y::Real) = logaddexp(promote(x, y)...)
-
-Base.@deprecate logsumexp(x::Real, y::Real) logaddexp(x,y)
+Base.@deprecate logsumexp(x::Real, y::Real) logaddexp(x, y)
 
 """
 $(SIGNATURES)
 
-Compute `log(sum(exp, X))`, evaluated avoiding intermediate overflow/undeflow.
-
-`X` should be an iterator of real numbers.
+Return `log(abs(exp(x) - exp(y)))`, preserving numerical accuracy.
 """
-function logsumexp(X)
-    isempty(X) && return log(sum(X))
-    reduce(logaddexp, X)
-end
-
-function logsumexp(X::AbstractArray{T}) where {T<:Real}
-    isempty(X) && return log(zero(T))
-    u = maximum(X)
-    isfinite(u) || return float(u)
-    let u=u # avoid https://github.com/JuliaLang/julia/issues/15276
-        u + log(sum(x -> exp(x-u), X))
-    end
-end
+logsubexp(x::Real, y::Real) = max(x, y) + log1mexp(-abs(x - y))
 
 """
 $(SIGNATURES)
@@ -260,5 +284,7 @@ Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_func
 applied to `x`.
 """
 softmax(x::AbstractArray{<:Real}) = softmax!(similar(x, Float64), x)
+
+include("logsumexp.jl")
 
 end # module
