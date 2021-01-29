@@ -61,7 +61,7 @@ jobs:
             Pkg.instantiate()'
       - run: |
           julia --project=docs -e '
-            using Documenter: doctest
+            using Documenter: doctest, DocMeta
             DocMeta.setdocmeta!(LogExpFunctions, :DocTestSetup, :(using LogExpFunctions); recursive=true)
             using LogExpFunctions
             doctest(LogExpFunctions)'
