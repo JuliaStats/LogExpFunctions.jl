@@ -62,8 +62,8 @@ jobs:
       - run: |
           julia --project=docs -e '
             using Documenter: doctest, DocMeta
-            DocMeta.setdocmeta!(LogExpFunctions, :DocTestSetup, :(using LogExpFunctions); recursive=true)
             using LogExpFunctions
+            DocMeta.setdocmeta!(LogExpFunctions, :DocTestSetup, :(using LogExpFunctions); recursive=true)
             doctest(LogExpFunctions)'
       - run: julia --project=docs docs/make.jl
         env:
