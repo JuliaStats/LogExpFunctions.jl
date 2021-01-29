@@ -1,6 +1,6 @@
 The LogExpFunctions.jl package is licensed under the MIT "Expat" License:
 
-> Original work Copyright (c) 2015: Dahua Lin.
+> Original work Copyright (c) 2015: Dahua Lin, StatsFuns.jl contributors.
 > Modified version Copyright (c) 2019: Tamas K. Papp.
 >
 > Permission is hereby granted, free of charge, to any person obtaining a copy
