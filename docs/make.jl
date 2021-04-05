@@ -9,5 +9,5 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/tpapp/LogExpFunctions.jl.git",
+    repo = "github.com/JuliaStats/LogExpFunctions.jl.git",
 )
