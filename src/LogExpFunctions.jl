@@ -10,5 +10,6 @@ export xlogx, xlogy, logistic, logit, log1psq, log1pexp, log1mexp, log2mexp, log
 
 include("constants.jl")
 include("basicfuns.jl")
+include("logsumexp.jl")
 
 end # module
