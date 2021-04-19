@@ -1,13 +1,11 @@
-# common facilities
-
 # scalar functions
 """
-    xlogx(x::Number)
+$(SIGNATURES)
 
-Compute `x * log(x)`, returning zero if `x` is zero.
+Return `x * log(x)` for `x ≥ 0`, handling ``x = 0`` by taking the downward limit.
 
 ```jldoctest
-julia> StatsFuns.xlogx(0)
+julia> xlogx(0)
 0.0
 ```
 """
@@ -17,12 +15,12 @@ function xlogx(x::Number)
 end
 
 """
-    xlogy(x::Number, y::Number)
+$(SIGNATURES)
 
-Compute `x * log(y)`, returning zero if `x` is zero.
+Return `x * log(y)` for `y > 0` with correct limit at ``x = 0``.
 
 ```jldoctest
-julia> StatsFuns.xlogy(0, 0)
+julia> xlogy(0, 0)
 0.0
 ```
 """
@@ -46,9 +44,11 @@ end
 @inline _logistic_bounds(x::Float64) = (-744.4400719213812, 36.7368005696771)
 
 """
-    logistic(x::Real)
+$(SIGNATURES)
 
-The [logistic](https://en.wikipedia.org/wiki/Logistic_function) sigmoid function mapping a real number to a value in the interval [0,1],
+The [logistic](https://en.wikipedia.org/wiki/Logistic_function) sigmoid function mapping a
+real number to a value in the interval ``[0,1]``,
+
 ```math
 \\sigma(x) = \\frac{1}{e^{-x} + 1} = \\frac{e^x}{1+e^x}.
 ```
@@ -72,18 +72,20 @@ function logistic(x::Union{Float16, Float32, Float64})
 end
 
 """
-    logit(p::Real)
+$(SIGNATURES)
 
 The [logit](https://en.wikipedia.org/wiki/Logit) or log-odds transformation,
+
 ```math
 \\log\\left(\\frac{x}{1-x}\\right), \\text{where} 0 < x < 1
 ```
+
 Its inverse is the [`logistic`](@ref) function.
 """
 logit(x::Real) = log(x / (one(x) - x))
 
 """
-    log1psq(x::Real)
+$(SIGNATURES)
 
 Return `log(1+x^2)` evaluated carefully for `abs(x)` very small or very large.
 """
@@ -94,7 +96,7 @@ function log1psq(x::Union{Float32,Float64})
 end
 
 """
-    log1pexp(x::Real)
+$(SIGNATURES)
 
 Return `log(1+exp(x))` evaluated carefully for largish `x`.
 
@@ -105,30 +107,29 @@ log1pexp(x::Real) = x < 18.0 ? log1p(exp(x)) : x < 33.3 ? x + exp(-x) : oftype(e
 log1pexp(x::Float32) = x < 9.0f0 ? log1p(exp(x)) : x < 16.0f0 ? x + exp(-x) : oftype(exp(-x), x)
 
 """
-    log1mexp(x::Real)
+$(SIGNATURES)
 
 Return `log(1 - exp(x))`
 
 See:
- * Martin Maechler (2012) "Accurately Computing log(1 − exp(− |a|))",
-   http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf
+ * Martin Maechler (2012) [“Accurately Computing log(1 − exp(− |a|))”](http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf)
 
 Note: different than Maechler (2012), no negation inside parentheses
 """
 log1mexp(x::Real) = x < loghalf ? log1p(-exp(x)) : log(-expm1(x))
 
 """
-    log2mexp(x::Real)
+$(SIGNATURES)
 
 Return `log(2 - exp(x))` evaluated as `log1p(-expm1(x))`
 """
 log2mexp(x::Real) = log1p(-expm1(x))
 
 """
-    logexpm1(x::Real)
+$(SIGNATURES)
 
-Return `log(exp(x) - 1)` or the "invsoftplus" function.
-It is the inverse of [`log1pexp`](@ref) (aka "softplus").
+Return `log(exp(x) - 1)` or the “invsoftplus” function.  It is the inverse of
+[`log1pexp`](@ref) (aka “softplus”).
 """
 logexpm1(x::Real) = x <= 18.0 ? log(expm1(x)) : x <= 33.3 ? x - exp(-x) : oftype(exp(-x), x)
 logexpm1(x::Float32) = x <= 9f0 ? log(expm1(x)) : x <= 16f0 ? x - exp(-x) : oftype(exp(-x), x)
@@ -137,9 +138,9 @@ const softplus = log1pexp
 const invsoftplus = logexpm1
 
 """
-    log1pmx(x::Float64)
+$(SIGNATURES)
 
-Return `log(1 + x) - x`
+Return `log(1 + x) - x`.
 
 Use naive calculation or range reduction outside kernel range.  Accurate ~2ulps for all `x`.
 """
@@ -164,7 +165,7 @@ function log1pmx(x::Float64)
 end
 
 """
-    logmxp1(x::Float64)
+$(SIGNATURES)
 
 Return `log(x) - x + 1` carefully evaluated.
 """
@@ -202,9 +203,10 @@ end
 
 
 """
-    logaddexp(x::Real, y::Real)
+$(SIGNATURES)
 
-Return `log(exp(x) + exp(y))`, avoiding intermediate overflow/undeflow, and handling non-finite values.
+Return `log(exp(x) + exp(y))`, avoiding intermediate overflow/undeflow, and handling
+non-finite values.
 """
 function logaddexp(x::Real, y::Real)
     # ensure Δ = 0 if x = y = ± Inf
@@ -215,14 +217,14 @@ end
 Base.@deprecate logsumexp(x::Real, y::Real) logaddexp(x, y)
 
 """
-    logsubexp(x, y)
+$(SIGNATURES)
 
-Return `log(abs(e^x - e^y))`, preserving numerical accuracy.
+Return `log(abs(exp(x) - exp(y)))`, preserving numerical accuracy.
 """
 logsubexp(x::Real, y::Real) = max(x, y) + log1mexp(-abs(x - y))
 
 """
-    logsumexp(X)
+$(SIGNATURES)
 
 Compute `log(sum(exp, X))` in a numerically stable way that avoids intermediate over- and
 underflow.
@@ -232,12 +234,12 @@ the data.
 
 # References
 
-[Sebastian Nowozin: Streaming Log-sum-exp Computation.](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
+[Sebastian Nowozin: Streaming Log-sum-exp Computation](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
 """
 logsumexp(X) = _logsumexp_onepass(X)
 
 """
-    logsumexp(X::AbstractArray{<:Real}; dims=:)
+$(SIGNATURES)
 
 Compute `log.(sum(exp.(X); dims=dims))` in a numerically stable way that avoids
 intermediate over- and underflow.
@@ -246,7 +248,7 @@ The result is computed using a single pass over the data.
 
 # References
 
-[Sebastian Nowozin: Streaming Log-sum-exp Computation.](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
+[Sebastian Nowozin: Streaming Log-sum-exp Computation](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
 """
 logsumexp(X::AbstractArray{<:Real}; dims=:) = _logsumexp(X, dims)
 
@@ -319,7 +321,7 @@ function _logsumexp_onepass_op((xmax1, r1)::Tuple, (xmax2, r2)::Tuple)
 end
 
 """
-    softmax!(r::AbstractArray, x::AbstractArray)
+$(SIGNATURES)
 
 Overwrite `r` with the `softmax` (or _normalized exponential_) transformation of `x`
 
@@ -343,9 +345,17 @@ function softmax!(r::AbstractArray{R}, x::AbstractArray{T}) where {R<:AbstractFl
 end
 
 """
-    softmax(x::AbstractArray{<:Real})
+$(SIGNATURES)
 
-Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function) applied to `x`
+Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function)
+applied to `x` *in place*.
 """
 softmax!(x::AbstractArray{<:AbstractFloat}) = softmax!(x, x)
+
+"""
+$(SIGNATURES)
+
+Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function)
+applied to `x`.
+"""
 softmax(x::AbstractArray{<:Real}) = softmax!(similar(x, Float64), x)

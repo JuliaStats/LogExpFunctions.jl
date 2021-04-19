@@ -1,5 +1,3 @@
-using StatsFuns, Test
-
 @testset "xlogx & xlogy" begin
     @test iszero(xlogx(0))
     @test xlogx(2) ≈ 2.0 * log(2.0)
