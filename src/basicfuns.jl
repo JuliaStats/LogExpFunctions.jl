@@ -261,4 +261,4 @@ $(SIGNATURES)
 Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function)
 applied to `x`.
 """
-softmax(x::AbstractArray{<:Real}) = softmax!(similar(x, Float64), x)
+softmax(x::AbstractArray{R<:Real}) = softmax!(similar(x, R), x)
