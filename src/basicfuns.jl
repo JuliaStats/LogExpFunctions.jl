@@ -236,7 +236,7 @@ function softmax!(r::AbstractArray{<:Real}, x::AbstractArray{<:Real})
     n = length(x)
     length(r) == n || throw(DimensionMismatch("Inconsistent array lengths."))
     u = maximum(x)
-    s = zero(R)
+    s = zero(eltype(r))
     @inbounds for i = 1:n
         s += (r[i] = exp(x[i] - u))
     end
