@@ -156,8 +156,15 @@ end
     x = [1, 2, 3]
     r = exp.(x) ./ sum(exp.(x))
     @test softmax(x) ≈ r
+    @test eltype(softmax(x)) == Float64
     
     x = [1//2, 2//3, 3//4]
     r = exp.(x) ./ sum(exp.(x))
     @test softmax(x) ≈ r
+    @test eltype(softmax(x)) == Float64
+    
+    x = Float32[1, 2, 3]
+    r = exp.(x) ./ sum(exp.(x))
+    @test softmax(x) ≈ r
+    @test eltype(softmax(x)) == Float32
 end
