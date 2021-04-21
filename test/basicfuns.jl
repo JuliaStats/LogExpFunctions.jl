@@ -150,9 +150,12 @@ end
     x = [1.0, 2.0, 3.0]
     r = exp.(x) ./ sum(exp.(x))
     @test softmax(x) ≈ r
-    @test softmax(Int.(x)) ≈ r
     softmax!(x)
     @test x ≈ r
+    
+    x = [1, 2, 3]
+    r = exp.(x) ./ sum(exp.(x))
+    @test softmax(x) ≈ r
     
     x = [1//2, 2//3, 3//4]
     r = exp.(x) ./ sum(exp.(x))
