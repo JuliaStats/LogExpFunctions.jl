@@ -232,19 +232,18 @@ That is, `r` is overwritten with `exp.(x)`, normalized to sum to 1.
 
 See the [Wikipedia entry](https://en.wikipedia.org/wiki/Softmax_function)
 """
-function softmax!(r::AbstractArray{R}, x::AbstractArray{T}) where {R<:AbstractFloat,T<:Real}
+function softmax!(r::AbstractArray{T}, x::AbstractArray{T}) where {T<:Real}
     n = length(x)
     length(r) == n || throw(DimensionMismatch("Inconsistent array lengths."))
     u = maximum(x)
-    s = 0.
+    s = zero(T)
     @inbounds for i = 1:n
         s += (r[i] = exp(x[i] - u))
     end
-    invs = convert(R, inv(s))
     @inbounds for i = 1:n
-        r[i] *= invs
+        r[i] /= s
     end
-    r
+    return r
 end
 
 """
