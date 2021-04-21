@@ -179,6 +179,7 @@ end
     # non-standard indices: #12
     x = OffsetArray(1:3, -2:0)
     s = softmax(x)
-    @test s isa OffsetArray
+    @test s isa OffsetArray{Float64}
+    @test axes(s, 1) == OffsetArrays.IdOffsetRange(-2:0)
     @test collect(s) ≈ softmax(1:3)
 end
