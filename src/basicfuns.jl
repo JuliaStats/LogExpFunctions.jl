@@ -241,7 +241,7 @@ function softmax!(r::AbstractArray{<:Real}, x::AbstractArray{<:Real})
         s += (r[i] = exp(x[i] - u))
     end
     @inbounds for i = 1:n
-        r[i] /= s
+        r[i] *= inv(s)
     end
     return r
 end
