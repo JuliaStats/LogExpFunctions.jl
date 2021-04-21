@@ -232,7 +232,7 @@ That is, `r` is overwritten with `exp.(x)`, normalized to sum to 1.
 
 See the [Wikipedia entry](https://en.wikipedia.org/wiki/Softmax_function)
 """
-function softmax!(r::AbstractArray{R}, x::AbstractArray{T}) where {R<:Real, T<:Real}
+function softmax!(r::AbstractArray{<:Real}, x::AbstractArray{<:Real})
     n = length(x)
     length(r) == n || throw(DimensionMismatch("Inconsistent array lengths."))
     u = maximum(x)
