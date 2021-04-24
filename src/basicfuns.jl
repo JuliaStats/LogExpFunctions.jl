@@ -233,17 +233,12 @@ That is, `r` is overwritten with `exp.(x)`, normalized to sum to 1.
 See the [Wikipedia entry](https://en.wikipedia.org/wiki/Softmax_function)
 """
 function softmax!(r::AbstractArray{<:Real}, x::AbstractArray{<:Real})
-    n = length(x)
-    length(r) == n || throw(DimensionMismatch("Inconsistent array lengths."))
+    length(r) == length(x) || throw(DimensionMismatch("inconsistent array lengths"))
     u = maximum(x)
-    s = zero(eltype(r))
-    @inbounds for i = 1:n
-        s += (r[i] = exp(x[i] - u))
+    map!(r, x) do xi
+        return exp(xi - u)
     end
-    invs = inv(s)
-    @inbounds for i = 1:n
-        r[i] *= invs
-    end
+    LinearAlgebra.lmul!(inv(sum(r)), r)
     return r
 end
 

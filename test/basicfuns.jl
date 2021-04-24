@@ -149,22 +149,37 @@ end
 @testset "softmax" begin
     x = [1.0, 2.0, 3.0]
     r = exp.(x) ./ sum(exp.(x))
-    @test softmax(x) ≈ r
+
+    # in-place versions
+    for T in (Float32, Float64)
+        s = Vector{T}(undef, 3)
+        softmax!(s, x)
+        @test s ≈ r
+
+        s = Matrix{T}(undef, 1, 3)
+        softmax!(s, x)
+        @test s ≈ permutedims(r)
+    end
     softmax!(x)
     @test x ≈ r
-    
-    x = [1, 2, 3]
-    r = exp.(x) ./ sum(exp.(x))
-    @test softmax(x) ≈ r
-    @test eltype(softmax(x)) == Float64
-    
+
+    for (S, T) in ((Int, Float64), (Float64, Float64), (Float32, Float32))
+        x = S[1, 2, 3]
+        s = softmax(x)
+        @test s ≈ r
+        @test eltype(s) === T
+    end
+
     x = [1//2, 2//3, 3//4]
     r = exp.(x) ./ sum(exp.(x))
-    @test softmax(x) ≈ r
-    @test eltype(softmax(x)) == Float64
+    s = softmax(x)
+    @test s ≈ r
+    @test eltype(s) === Float64
     
-    x = Float32[1, 2, 3]
-    r = exp.(x) ./ sum(exp.(x))
-    @test softmax(x) ≈ r
-    @test eltype(softmax(x)) == Float32
+    # non-standard indices: #12
+    x = OffsetArray(1:3, -2:0)
+    s = softmax(x)
+    @test s isa OffsetArray{Float64}
+    @test axes(s, 1) == OffsetArrays.IdOffsetRange(-2:0)
+    @test collect(s) ≈ softmax(1:3)
 end
