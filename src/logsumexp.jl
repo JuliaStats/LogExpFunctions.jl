@@ -4,8 +4,8 @@ $(SIGNATURES)
 Compute `log(sum(exp, X))` in a numerically stable way that avoids intermediate over- and
 underflow.
 
-`X` should be an iterator of real numbers. The result is computed using a single pass over
-the data.
+`X` should be an iterator of real or complex numbers. The result is computed using a single
+pass over the data.
 
 # References
 
@@ -25,10 +25,10 @@ The result is computed using a single pass over the data.
 
 [Sebastian Nowozin: Streaming Log-sum-exp Computation](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
 """
-logsumexp(X::AbstractArray{<:Real}; dims=:) = _logsumexp(X, dims)
+logsumexp(X::AbstractArray{<:Number}; dims=:) = _logsumexp(X, dims)
 
-_logsumexp(X::AbstractArray{<:Real}, ::Colon) = _logsumexp_onepass(X)
-function _logsumexp(X::AbstractArray{<:Real}, dims)
+_logsumexp(X::AbstractArray{<:Number}, ::Colon) = _logsumexp_onepass(X)
+function _logsumexp(X::AbstractArray{<:Number}, dims)
     # Do not use log(zero(eltype(X))) directly to avoid issues with ForwardDiff (#82)
     FT = float(eltype(X))
     xmax_r = reduce(_logsumexp_onepass_op, X; dims=dims, init=(FT(-Inf), zero(FT)))
@@ -61,36 +61,59 @@ _logsumexp_onepass_reduce(X, ::Base.EltypeUnknown) = reduce(_logsumexp_onepass_o
 ## Reductions for one-pass algorithm: avoid expensive multiplications if numbers are reduced
 
 # reduce two numbers
-function _logsumexp_onepass_op(x1, x2)
-    a = x1 == x2 ? zero(x1 - x2) : -abs(x1 - x2)
-    xmax = x1 > x2 ? oftype(a, x1) : oftype(a, x2)
+function _logsumexp_onepass_op(x1::T, x2::T) where {T<:Number}
+    xmax, a = if x1 == x2
+        # handle `Inf` etc. correctly
+        x2, zero(x1 - x2)
+    elseif real(x1) > real(x2)
+        x1, x2 - x1
+    else
+        x2, x1 - x2
+    end
     r = exp(a)
     return xmax, r
 end
+_logsumexp_onepass_op(x1::Number, x2::Number) = _logsumexp_onepass_op(promote(x1, x2)...)
 
 # reduce a number and a partial sum
-function _logsumexp_onepass_op(x, (xmax, r)::Tuple)
-    a = x == xmax ? zero(x - xmax) : -abs(x - xmax)
-    if x > xmax
-        _xmax = oftype(a, x)
-        _r = (r + one(r)) * exp(a)
+function _logsumexp_onepass_op(x::Number, (xmax, r)::Tuple{<:Number,<:Number})
+    return _logsumexp_onepass_op(x, xmax, r)
+end
+function _logsumexp_onepass_op((xmax, r)::Tuple{<:Number,<:Number}, x::Number)
+    return _logsumexp_onepass_op(x, xmax, r)
+end
+function _logsumexp_onepass_op(x::Number, xmax::Number, r::Number)
+    return _logsumexp_onepass_op(promote(x, xmax)..., r)
+end
+function _logsumexp_onepass_op(x::T, xmax::T, r::Number) where {T<:Number}
+    _xmax, _r = if x == xmax
+        # handle `Inf` etc. correctly
+        xmax, r + exp(zero(x - xmax))
+    elseif real(x) > real(xmax)
+        x, (r + one(r)) * exp(xmax - x)
     else
-        _xmax = oftype(a, xmax)
-        _r = r + exp(a)
+        xmax, r + exp(x - xmax)
     end
     return _xmax, _r
 end
-_logsumexp_onepass_op(xmax_r::Tuple, x) = _logsumexp_onepass_op(x, xmax_r)
 
 # reduce two partial sums
-function _logsumexp_onepass_op((xmax1, r1)::Tuple, (xmax2, r2)::Tuple)
-    a = xmax1 == xmax2 ? zero(xmax1 - xmax2) : -abs(xmax1 - xmax2)
-    if xmax1 > xmax2
-        xmax = oftype(a, xmax1)
-        r = r1 + (r2 + one(r2)) * exp(a)
+function _logsumexp_onepass_op(
+    (xmax1, r1)::Tuple{<:Number,<:Number}, (xmax2, r2)::Tuple{<:Number,<:Number}
+)
+    return _logsumexp_onepass_op(xmax1, xmax2, r1, r2)
+end
+function _logsumexp_onepass_op(xmax1::Number, xmax2::Number, r1::Number, r2::Number)
+    return _logsumexp_onepass_op(promote(xmax1, xmax2)..., promote(r1, r2)...)
+end
+function _logsumexp_onepass_op(xmax1::T, xmax2::T, r1::R, r2::R) where {T<:Number,R<:Number}
+    xmax, r = if xmax1 == xmax2
+        # handle `Inf` etc. correctly
+        xmax2, r2 + (r1 + one(r1)) * exp(zero(xmax1 - xmax2))
+    elseif real(xmax1) > real(xmax2)
+        xmax1, r1 + (r2 + one(r2)) * exp(xmax2 - xmax1)
     else
-        xmax = oftype(a, xmax2)
-        r = r2 + (r1 + one(r1)) * exp(a)
+        xmax2, r2 + (r1 + one(r1)) * exp(xmax1 - xmax2)
     end
     return xmax, r
 end
