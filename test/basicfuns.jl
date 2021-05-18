@@ -157,6 +157,9 @@ end
     @test isnan(logsumexp(Complex{Float64}[NaN, 9.0]))
     @test isnan(logsumexp(Complex{Float64}[NaN, Inf]))
     @test isnan(logsumexp(Complex{Float64}[NaN, -Inf]))
+    @test isnan(logsumexp(Complex{Float64}[NaN * im, 9.0]))
+    @test isnan(logsumexp(Complex{Float64}[NaN * im, Inf]))
+    @test isnan(logsumexp(Complex{Float64}[NaN * im, -Inf]))
 
     # logsumexp with general iterables (issue #63)
     xs = range(-500, stop = 10, length = 1000)

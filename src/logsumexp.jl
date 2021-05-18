@@ -63,8 +63,12 @@ _logsumexp_onepass_reduce(X, ::Base.EltypeUnknown) = reduce(_logsumexp_onepass_o
 # reduce two numbers
 function _logsumexp_onepass_op(x1::T, x2::T) where {T<:Number}
     xmax, a = if x1 == x2
-        # handle `Inf` etc. correctly
+        # handle `x1 = x2 = ±Inf` correctly
         x2, zero(x1 - x2)
+    elseif isnan(x1) || isnan(x2)
+        # ensure that `NaN` is propagated correctly for complex numbers
+        z = oftype(x1, NaN)
+        z, exp(z)
     elseif real(x1) > real(x2)
         x1, x2 - x1
     else
@@ -87,8 +91,12 @@ function _logsumexp_onepass_op(x::Number, xmax::Number, r::Number)
 end
 function _logsumexp_onepass_op(x::T, xmax::T, r::Number) where {T<:Number}
     _xmax, _r = if x == xmax
-        # handle `Inf` etc. correctly
+        # handle `x = xmax = ±Inf` correctly
         xmax, r + exp(zero(x - xmax))
+    elseif isnan(x) || isnan(xmax)
+        # ensure that `NaN` is propagated correctly for complex numbers
+        z = oftype(x, NaN)
+        z, r + exp(z)
     elseif real(x) > real(xmax)
         x, (r + one(r)) * exp(xmax - x)
     else
@@ -108,8 +116,12 @@ function _logsumexp_onepass_op(xmax1::Number, xmax2::Number, r1::Number, r2::Num
 end
 function _logsumexp_onepass_op(xmax1::T, xmax2::T, r1::R, r2::R) where {T<:Number,R<:Number}
     xmax, r = if xmax1 == xmax2
-        # handle `Inf` etc. correctly
+        # handle `xmax1 = xmax2 = ±Inf` correctly
         xmax2, r2 + (r1 + one(r1)) * exp(zero(xmax1 - xmax2))
+    elseif isnan(xmax1) || isnan(xmax2)
+        # ensure that `NaN` is propagated correctly for complex numbers
+        z = oftype(xmax1, NaN)
+        z, r1 + exp(z)
     elseif real(xmax1) > real(xmax2)
         xmax1, r1 + (r2 + one(r2)) * exp(xmax2 - xmax1)
     else
