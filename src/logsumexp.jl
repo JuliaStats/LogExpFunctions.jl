@@ -80,15 +80,12 @@ end
 _logsumexp_onepass_op(x1::Number, x2::Number) = _logsumexp_onepass_op(promote(x1, x2)...)
 
 # reduce a number and a partial sum
-function _logsumexp_onepass_op(x::Number, (xmax, r)::Tuple{<:Number,<:Number})
-    return _logsumexp_onepass_op(x, xmax, r)
-end
-function _logsumexp_onepass_op((xmax, r)::Tuple{<:Number,<:Number}, x::Number)
-    return _logsumexp_onepass_op(x, xmax, r)
-end
-function _logsumexp_onepass_op(x::Number, xmax::Number, r::Number)
-    return _logsumexp_onepass_op(promote(x, xmax)..., r)
-end
+_logsumexp_onepass_op(x::Number, (xmax, r)::Tuple{<:Number,<:Number}) =
+    _logsumexp_onepass_op(x, xmax, r)
+_logsumexp_onepass_op((xmax, r)::Tuple{<:Number,<:Number}, x::Number) =
+    _logsumexp_onepass_op(x, xmax, r)
+_logsumexp_onepass_op(x::Number, xmax::Number, r::Number) =
+    _logsumexp_onepass_op(promote(x, xmax)..., r)
 function _logsumexp_onepass_op(x::T, xmax::T, r::Number) where {T<:Number}
     _xmax, _r = if x == xmax
         # handle `x = xmax = ±Inf` correctly
