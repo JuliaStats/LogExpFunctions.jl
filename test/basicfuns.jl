@@ -94,18 +94,31 @@ end
     @test logaddexp(2.0, 3.0)     ≈ log(exp(2.0) + exp(3.0))
     @test logaddexp(10002, 10003) ≈ 10000 + logaddexp(2.0, 3.0)
 
-    @test @inferred(logsumexp([1.0])) == 1.0
-    @test @inferred(logsumexp((x for x in [1.0]))) == 1.0
-    @test @inferred(logsumexp([1.0, 2.0, 3.0])) ≈ 3.40760596444438
-    @test @inferred(logsumexp((1.0, 2.0, 3.0))) ≈ 3.40760596444438
-    @test logsumexp([1.0, 2.0, 3.0] .+ 1000.) ≈ 1003.40760596444438
+    for x in ([1.0], Complex{Float64}[1.0])
+        @test @inferred(logsumexp(x)) == 1.0
+        @test @inferred(logsumexp((xi for xi in x))) == 1.0
+    end
 
-    @test @inferred(logsumexp([[1.0, 2.0, 3.0] [1.0, 2.0, 3.0] .+ 1000.]; dims=1)) ≈ [3.40760596444438 1003.40760596444438]
-    @test @inferred(logsumexp([[1.0 2.0 3.0]; [1.0 2.0 3.0] .+ 1000.]; dims=2)) ≈ [3.40760596444438, 1003.40760596444438]
-    @test @inferred(logsumexp([[1.0, 2.0, 3.0] [1.0, 2.0, 3.0] .+ 1000.]; dims=[1,2])) ≈ [1003.4076059644444]
+    for x in ([1.0, 2.0, 3.0], Complex{Float64}[1.0, 2.0, 3.0])
+        @test @inferred(logsumexp(x)) ≈ 3.40760596444438
+        @test logsumexp(x .+ 1000) ≈ 1003.40760596444438
+    end
+
+    for x in ((1.0, 2.0, 3.0), map(complex, (1.0, 2.0, 3.0)))
+        @test @inferred(logsumexp(x)) ≈ 3.40760596444438
+    end
+
+    _x = [[1.0, 2.0, 3.0] [1.0, 2.0, 3.0] .+ 1000.]
+    for x in (_x, complex(_x))
+        @test @inferred(logsumexp(x; dims=1)) ≈ [3.40760596444438 1003.40760596444438]
+        @test @inferred(logsumexp(x; dims=[1, 2])) ≈ [1003.4076059644444]
+        y = copy(x')
+        @test @inferred(logsumexp(y; dims=2)) ≈ [3.40760596444438, 1003.40760596444438]
+    end
 
     # check underflow
     @test logsumexp([1e-20, log(1e-20)]) ≈ 2e-20
+    @test logsumexp(Complex{Float64}[1e-20, log(1e-20)]) ≈ 2e-20
 
     let cases = [([-Inf, -Inf], -Inf),   # correct handling of all -Inf
                  ([-Inf, -Inf32], -Inf), # promotion
@@ -117,6 +130,7 @@ end
         for (arguments, result) in cases
             @test logaddexp(arguments...) ≡ result
             @test logsumexp(arguments) ≡ result
+            @test logsumexp(complex(arguments)) ≡ complex(result)
         end
     end
 
@@ -140,9 +154,25 @@ end
     @test isnan(logsumexp([NaN, 9.0]))
     @test isnan(logsumexp([NaN, Inf]))
     @test isnan(logsumexp([NaN, -Inf]))
+    @test isnan(logsumexp(Complex{Float64}[NaN, 9.0]))
+    @test isnan(logsumexp(Complex{Float64}[NaN, Inf]))
+    @test isnan(logsumexp(Complex{Float64}[NaN, -Inf]))
+    @test isnan(logsumexp(Complex{Float64}[NaN * im, 9.0]))
+    @test isnan(logsumexp(Complex{Float64}[NaN * im, Inf]))
+    @test isnan(logsumexp(Complex{Float64}[NaN * im, -Inf]))
 
     # logsumexp with general iterables (issue #63)
     xs = range(-500, stop = 10, length = 1000)
+    @test @inferred(logsumexp(x for x in xs)) == logsumexp(xs)
+    xs = range(-500 + 0.5im, stop = 10 + 30im, length = 1000)
+    @test @inferred(logsumexp(x for x in xs)) == logsumexp(xs)
+
+    # complex numbers
+    xs = randn(Complex{Float64}, 10, 5)
+    @test @inferred(logsumexp(xs)) ≈ log(sum(exp.(xs)))
+    @test @inferred(logsumexp(xs; dims=1)) ≈ log.(sum(exp.(xs); dims=1))
+    @test @inferred(logsumexp(xs; dims=2)) ≈ log.(sum(exp.(xs); dims=2))
+    @test @inferred(logsumexp(xs; dims=[1, 2])) ≈ log(sum(exp.(xs); dims=[1, 2]))
     @test @inferred(logsumexp(x for x in xs)) == logsumexp(xs)
 end
 

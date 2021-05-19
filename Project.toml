@@ -1,7 +1,7 @@
 name = "LogExpFunctions"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
 authors = ["StatsFun.jl contributors, Tamas K. Papp <tkpapp@gmail.com>"]
-version = "0.2.3"
+version = "0.2.4"
 
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
