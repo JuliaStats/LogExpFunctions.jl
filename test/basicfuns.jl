@@ -135,7 +135,7 @@ end
     end
 
     @test isnan(logsubexp(Inf, Inf))
-    @test isnan(logsubexp(-Inf, -Inf))
+    @test logsubexp(-Inf, -Inf) ≡ -Inf
     @test logsubexp(Inf, 9.0) ≡ Inf
     @test logsubexp(-Inf, 9.0) ≡ 9.0
     @test logsubexp(1f2, 1f2) ≡ -Inf32
@@ -205,7 +205,7 @@ end
     s = softmax(x)
     @test s ≈ r
     @test eltype(s) === Float64
-    
+
     # non-standard indices: #12
     x = OffsetArray(1:3, -2:0)
     s = softmax(x)

@@ -221,7 +221,11 @@ $(SIGNATURES)
 
 Return `log(abs(exp(x) - exp(y)))`, preserving numerical accuracy.
 """
-logsubexp(x::Real, y::Real) = max(x, y) + log1mexp(-abs(x - y))
+function logsubexp(x::Real, y::Real)
+    # ensure that `Δ = 0` if `x = y = - Inf` (but not for `x = y = +Inf`!)
+    Δ = x == y && (isfinite(x) || x < 0) ? zero(x - y) : abs(x - y)
+    return max(x, y) + log1mexp(-Δ)
+end
 
 """
 $(SIGNATURES)
