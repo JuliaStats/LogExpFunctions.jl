@@ -135,21 +135,26 @@ end
     end
 
     @test isnan(logsubexp(Inf, Inf))
-    @test isnan(logsubexp(-Inf, -Inf))
+    @test logsubexp(-Inf, -Inf) ≡ -Inf
+    @test logsubexp(Inf, -Inf) ≡ Inf
+    @test logsubexp(-Inf, Inf) ≡ Inf
     @test logsubexp(Inf, 9.0) ≡ Inf
+    @test logsubexp(9.0, Inf) ≡ Inf
     @test logsubexp(-Inf, 9.0) ≡ 9.0
+    @test logsubexp(9.0, -Inf) ≡ 9.0
     @test logsubexp(1f2, 1f2) ≡ -Inf32
     @test logsubexp(0, 0) ≡ -Inf
     @test logsubexp(3, 2) ≈ 2.541324854612918108978
 
     # NaN propagation
-    @test isnan(logaddexp(NaN, 9.0))
-    @test isnan(logaddexp(NaN, Inf))
-    @test isnan(logaddexp(NaN, -Inf))
-
-    @test isnan(logsubexp(NaN, 9.0))
-    @test isnan(logsubexp(NaN, Inf))
-    @test isnan(logsubexp(NaN, -Inf))
+    for f in (logaddexp, logsubexp)
+        @test isnan(f(NaN, 9.0))
+        @test isnan(f(NaN, Inf))
+        @test isnan(f(NaN, -Inf))
+        @test isnan(f(9.0, NaN))
+        @test isnan(f(Inf, NaN))
+        @test isnan(f(-Inf, NaN))
+    end
 
     @test isnan(logsumexp([NaN, 9.0]))
     @test isnan(logsumexp([NaN, Inf]))
@@ -205,7 +210,7 @@ end
     s = softmax(x)
     @test s ≈ r
     @test eltype(s) === Float64
-    
+
     # non-standard indices: #12
     x = OffsetArray(1:3, -2:0)
     s = softmax(x)
