@@ -21,3 +21,16 @@ logsumexp
 softmax!
 softmax
 ```
+
+## Constants
+
+Additionally, LogExpFunctions.jl reexports the following logarithmic constants defined in
+[IrrationalConstants.jl](https://github.com/JuliaMath/IrrationalConstants.jl).
+
+```julia
+loghalf    # log(1 / 2)
+logtwo     # log(2)
+logπ       # log(π)
+log2π      # log(2π)
+log4π      # log(4π)
+```
