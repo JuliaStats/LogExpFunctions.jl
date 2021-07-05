@@ -17,6 +17,7 @@ logexpm1
 log1pmx
 logmxp1
 logaddexp
+logsubexp
 logsumexp
 softmax!
 softmax
