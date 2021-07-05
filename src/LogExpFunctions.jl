@@ -1,7 +1,9 @@
 module LogExpFunctions
 
 using DocStringExtensions: SIGNATURES
-using Base: Math.@horner, @irrational
+using Base: Math.@horner
+
+import IrrationalConstants
 import LinearAlgebra
 
 export xlogx, xlogy, logistic, logit, log1psq, log1pexp, log1mexp, log2mexp, logexpm1,

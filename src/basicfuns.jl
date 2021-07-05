@@ -116,7 +116,7 @@ See:
 
 Note: different than Maechler (2012), no negation inside parentheses
 """
-log1mexp(x::Real) = x < loghalf ? log1p(-exp(x)) : log(-expm1(x))
+log1mexp(x::Real) = x < IrrationalConstants.loghalf ? log1p(-exp(x)) : log(-expm1(x))
 
 """
 $(SIGNATURES)
