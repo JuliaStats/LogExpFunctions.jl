@@ -3,6 +3,7 @@ module LogExpFunctions
 using DocStringExtensions: SIGNATURES
 using Base: Math.@horner
 
+import ChainRulesCore
 import IrrationalConstants
 import LinearAlgebra
 
@@ -12,5 +13,6 @@ export xlogx, xlogy, logistic, logit, log1psq, log1pexp, log1mexp, log2mexp, log
 
 include("basicfuns.jl")
 include("logsumexp.jl")
+include("chainrules.jl")
 
 end # module
