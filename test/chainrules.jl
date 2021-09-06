@@ -6,6 +6,11 @@
         y = rand()
         test_frule(xlogy, x, y)
         test_rrule(xlogy, x, y)
+
+        for z in (-y, y)
+            test_frule(xlog1py, x, z)
+            test_rrule(xlog1py, x, z)
+        end
     end
 
     test_frule(logit, x)

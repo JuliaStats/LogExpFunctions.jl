@@ -1,5 +1,6 @@
 ChainRulesCore.@scalar_rule(xlogx(x::Real), (1 + log(x),))
 ChainRulesCore.@scalar_rule(xlogy(x::Real, y::Real), (log(y), x / y,))
+ChainRulesCore.@scalar_rule(xlog1py(x::Real, y::Real), (log1p(y), x / (1 + y),))
 
 ChainRulesCore.@scalar_rule(logistic(x::Real), (Ω * (1 - Ω),))
 ChainRulesCore.@scalar_rule(logit(x::Real), (inv(x * (1 - x)),))

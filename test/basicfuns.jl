@@ -1,4 +1,4 @@
-@testset "xlogx & xlogy" begin
+@testset "xlogx, xlogy, and xlog1py" begin
     @test iszero(xlogx(0))
     @test xlogx(2) ≈ 2.0 * log(2.0)
     @test_throws DomainError xlogx(-1)
@@ -10,6 +10,13 @@
     @test isnan(xlogy(NaN, 2))
     @test isnan(xlogy(2, NaN))
     @test isnan(xlogy(0, NaN))
+
+    @test iszero(xlog1py(0, 0))
+    @test xlog1py(2, 3) ≈ 2.0 * log1p(3.0)
+    @test_throws DomainError xlog1py(1, -2)
+    @test isnan(xlog1py(NaN, 2))
+    @test isnan(xlog1py(2, NaN))
+    @test isnan(xlog1py(0, NaN))
 
     # Since we allow complex/negative values, test for them. See comments in:
     # https://github.com/JuliaStats/StatsFuns.jl/pull/95
@@ -26,6 +33,15 @@
     @test isnan(xlogy(Inf + im * NaN, 1))
     @test isnan(xlogy(0 + im * 0, NaN))
     @test iszero(xlogy(0 + im * 0, 0 + im * Inf))
+
+    @test xlog1py(-2, 3) == -xlog1py(2, 3)
+    @test xlog1py(1 + im, 3) == (1 + im) * log1p(3)
+    @test xlog1py(1 + im, 2 + im) == (1 + im) * log1p(2 + im)
+    @test isnan(xlog1py(1 + NaN * im, -1 + im))
+    @test isnan(xlog1py(0, -1 + NaN * im))
+    @test isnan(xlog1py(Inf + im * NaN, 1))
+    @test isnan(xlog1py(0 + im * 0, NaN))
+    @test iszero(xlog1py(0 + im * 0, -1 + im * Inf))
 end
 
 @testset "logistic & logit" begin
