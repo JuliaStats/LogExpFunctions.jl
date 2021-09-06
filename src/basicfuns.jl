@@ -11,7 +11,7 @@ julia> xlogx(0)
 """
 function xlogx(x::Number)
     result = x * log(x)
-    ifelse(iszero(x), zero(result), result)
+    return iszero(x) ? zero(result) : result
 end
 
 """
@@ -26,7 +26,7 @@ julia> xlogy(0, 0)
 """
 function xlogy(x::Number, y::Number)
     result = x * log(y)
-    ifelse(iszero(x) && !isnan(y), zero(result), result)
+    return iszero(x) && !isnan(y) ? zero(result) : result
 end
 
 # The following bounds are precomputed versions of the following abstract
@@ -60,15 +60,7 @@ logistic(x::Real) = inv(exp(-x) + one(x))
 function logistic(x::Union{Float16, Float32, Float64})
     e = exp(x)
     lower, upper = _logistic_bounds(x)
-    ifelse(
-        x < lower,
-        zero(x),
-        ifelse(
-            x > upper,
-            one(x),
-            e / (one(x) + e)
-        )
-    )
+    return x < lower ? zero(x) : x > upper ? one(x) : e / (one(x) + e)
 end
 
 """
@@ -210,7 +202,7 @@ non-finite values.
 """
 function logaddexp(x::Real, y::Real)
     # ensure Δ = 0 if x = y = ± Inf
-    Δ = ifelse(x == y, zero(x - y), abs(x - y))
+    Δ = x == y ? zero(x - y) : abs(x - y)
     max(x, y) + log1pexp(-Δ)
 end
 
