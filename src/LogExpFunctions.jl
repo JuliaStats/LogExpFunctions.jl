@@ -7,7 +7,7 @@ import ChainRulesCore
 import IrrationalConstants
 import LinearAlgebra
 
-export xlogx, xlogy, logistic, logit, log1psq, log1pexp, log1mexp, log2mexp, logexpm1,
+export xlogx, xlogy, xlog1py, logistic, logit, log1psq, log1pexp, log1mexp, log2mexp, logexpm1,
     softplus, invsoftplus, log1pmx, logmxp1, logaddexp, logsubexp, logsumexp, softmax,
     softmax!
 

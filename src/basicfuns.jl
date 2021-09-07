@@ -29,6 +29,21 @@ function xlogy(x::Number, y::Number)
     return iszero(x) && !isnan(y) ? zero(result) : result
 end
 
+"""
+$(SIGNATURES)
+
+Return `x * log(1 + y)` for `y ≥ -1` with correct limit at ``x = 0``.
+
+```jldoctest
+julia> xlog1py(0, -1)
+0.0
+```
+"""
+function xlog1py(x::Number, y::Number)
+    result = x * log1p(y)
+    return iszero(x) && !isnan(y) ? zero(result) : result
+end
+
 # The following bounds are precomputed versions of the following abstract
 # function, but the implicit interface for AbstractFloat doesn't uniformly
 # enforce that all floating point types implement nextfloat and prevfloat.

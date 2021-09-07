@@ -7,6 +7,7 @@ The original authors of these functions are the StatsFuns.jl contributors.
 ```@docs
 xlogx
 xlogy
+xlog1py
 logistic
 logit
 log1psq
