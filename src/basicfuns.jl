@@ -239,11 +239,34 @@ $(SIGNATURES)
 
 Overwrite `r` with the `softmax` (or _normalized exponential_) transformation of `x`
 
-That is, `r` is overwritten with `exp.(x)`, normalized to sum to 1.
+That is, `r` is overwritten with `exp.(x)`, normalized to sum to 1 over the given
+dimensions.
 
 See the [Wikipedia entry](https://en.wikipedia.org/wiki/Softmax_function)
 """
-function softmax!(r::AbstractArray{<:Real}, x::AbstractArray{<:Real})
+function softmax!(r::AbstractArray{<:Real}, x::AbstractArray{<:Real}; dims=:)
+    return _softmax!(r, x, dims)
+end
+
+"""
+$(SIGNATURES)
+
+Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function)
+applied to `x` *in place*.
+"""
+softmax!(x::AbstractArray{<:Real}; dims=:) = softmax!(x, x; dims=dims)
+
+"""
+$(SIGNATURES)
+
+Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function)
+applied to `x`.
+"""
+function softmax(x::AbstractArray{<:Real}; dims=:)
+    return softmax!(similar(x, float(eltype(x))), x; dims=dims)
+end
+
+function _softmax!(r, x, ::Colon)
     length(r) == length(x) || throw(DimensionMismatch("inconsistent array lengths"))
     u = maximum(x)
     map!(r, x) do xi
@@ -253,18 +276,16 @@ function softmax!(r::AbstractArray{<:Real}, x::AbstractArray{<:Real})
     return r
 end
 
-"""
-$(SIGNATURES)
-
-Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function)
-applied to `x` *in place*.
-"""
-softmax!(x::AbstractArray{<:AbstractFloat}) = softmax!(x, x)
-
-"""
-$(SIGNATURES)
-
-Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function)
-applied to `x`.
-"""
-softmax(x::AbstractArray{<:Real}) = softmax!(similar(x, float(eltype(x))), x)
+function _softmax!(r, x, dims)
+    size(r) == size(x) || throw(DimensionMismatch("inconsistent array sizes"))
+    u = maximum(x; dims=dims)
+    r .= exp.(x .- u)
+    if u isa Array{eltype(r)}
+        # array can be reused
+        sum!(u, r)
+        r ./= u
+    else
+        r ./= sum(r; dims=dims)
+    end
+    return r
+end

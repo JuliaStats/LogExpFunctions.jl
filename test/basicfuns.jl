@@ -207,8 +207,22 @@ end
         softmax!(s, x)
         @test s ≈ r
 
+        fill!(s, zero(T))
+        softmax!(s, x; dims=1)
+        @test s ≈ r
+
         s = Matrix{T}(undef, 1, 3)
         softmax!(s, x)
+        @test s ≈ permutedims(r)
+
+        @test_throws DimensionMismatch softmax!(s, x; dims=1)
+
+        fill!(s, zero(T))
+        softmax!(s, permutedims(x); dims=2)
+        @test s ≈ permutedims(r)
+
+        fill!(s, zero(T))
+        softmax!(s, permutedims(x); dims=1:2)
         @test s ≈ permutedims(r)
     end
     softmax!(x)
@@ -218,6 +232,21 @@ end
         x = S[1, 2, 3]
         s = softmax(x)
         @test s ≈ r
+        @test eltype(s) === T
+
+        x = repeat(S[1, 2, 3], 1, 3)
+        s = softmax(x; dims=1)
+        @test s ≈ repeat(r, 1, 3)
+        @test eltype(s) === T
+
+        x = repeat(S[1 2 3], 3, 1)
+        s = softmax(x; dims=2)
+        @test s ≈ repeat(permutedims(r), 3, 1)
+        @test eltype(s) === T
+
+        x = S[1 2 3]
+        s = softmax(x; dims=1:2)
+        @test s ≈ permutedims(r)
         @test eltype(s) === T
     end
 
