@@ -244,9 +244,8 @@ dimensions.
 
 See the [Wikipedia entry](https://en.wikipedia.org/wiki/Softmax_function)
 """
-function softmax!(r::AbstractArray{<:Real}, x::AbstractArray{<:Real}; dims=:)
-    return _softmax!(r, x, dims)
-end
+softmax!(r::AbstractArray{<:Real}, x::AbstractArray{<:Real}; dims=:) =
+    _softmax!(r, x, dims)
 
 """
 $(SIGNATURES)
@@ -262,9 +261,8 @@ $(SIGNATURES)
 Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function)
 applied to `x`.
 """
-function softmax(x::AbstractArray{<:Real}; dims=:)
-    return softmax!(similar(x, float(eltype(x))), x; dims=dims)
-end
+softmax(x::AbstractArray{<:Real}; dims=:) =
+    softmax!(similar(x, float(eltype(x))), x; dims=dims)
 
 function _softmax!(r, x, ::Colon)
     length(r) == length(x) || throw(DimensionMismatch("inconsistent array lengths"))

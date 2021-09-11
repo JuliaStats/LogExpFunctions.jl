@@ -38,7 +38,7 @@ end
 # https://juliadiff.org/ChainRulesCore.jl/stable/writing_good_rules.html#Which-functions-need-rules?
 function ChainRulesCore.frule((_, Δx), ::typeof(softmax), x::AbstractArray{<:Real}; dims=:)
     Ω = softmax(x; dims=dims)
-    ΔΩ = if dims === Colon()
+    ΔΩ = if dims === :
         Ω .* (Δx .- LinearAlgebra.dot(Ω, Δx))
     else
         ΩΔx = Ω .* Δx
@@ -51,7 +51,7 @@ function ChainRulesCore.rrule(::typeof(softmax), x::AbstractArray{<:Real}; dims=
     Ωcopy = copy(Ω)
     project_x = ChainRulesCore.ProjectTo(x)
     function softmax_pullback(Ω̄)
-        x̄ = if dims === Colon()
+        x̄ = if dims === :
             ChainRulesCore.InplaceableThunk(
                 Δ -> Δ .+= Ωcopy .* (Ω̄ .- LinearAlgebra.dot(Ωcopy, Ω̄)),
                 ChainRulesCore.@thunk(project_x(Ωcopy .* (Ω̄ .- LinearAlgebra.dot(Ωcopy, Ω̄)))),
