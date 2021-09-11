@@ -235,31 +235,28 @@ function logsubexp(x::Real, y::Real)
 end
 
 """
-$(SIGNATURES)
+    softmax!(r::AbstractArray{<:Real}, x::AbstractArray{<:Real}=r; dims=:)
 
-Overwrite `r` with the `softmax` (or _normalized exponential_) transformation of `x`
+Overwrite `r` with the
+[softmax transformation](https://en.wikipedia.org/wiki/Softmax_function) of `x` over
+dimension `dims`.
 
 That is, `r` is overwritten with `exp.(x)`, normalized to sum to 1 over the given
 dimensions.
 
-See the [Wikipedia entry](https://en.wikipedia.org/wiki/Softmax_function)
+See also: [`softmax`](@ref)
 """
 softmax!(r::AbstractArray{<:Real}, x::AbstractArray{<:Real}; dims=:) =
     _softmax!(r, x, dims)
 
 """
-$(SIGNATURES)
+    softmax(x::AbstractArray{<:Real}; dims=:)
 
-Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function)
-applied to `x` *in place*.
-"""
-softmax!(x::AbstractArray{<:Real}; dims=:) = softmax!(x, x; dims=dims)
+Return the
+[softmax transformation](https://en.wikipedia.org/wiki/Softmax_function) of `x` over
+dimension `dims`.
 
-"""
-$(SIGNATURES)
-
-Return the [`softmax transformation`](https://en.wikipedia.org/wiki/Softmax_function)
-applied to `x`.
+See also: [`softmax!`](@ref)
 """
 softmax(x::AbstractArray{<:Real}; dims=:) =
     softmax!(similar(x, float(eltype(x))), x; dims=dims)
