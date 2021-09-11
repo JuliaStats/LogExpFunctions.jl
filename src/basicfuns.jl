@@ -246,7 +246,7 @@ dimensions.
 
 See also: [`softmax`](@ref)
 """
-softmax!(r::AbstractArray{<:Real}, x::AbstractArray{<:Real}; dims=:) =
+softmax!(r::AbstractArray{<:Real}, x::AbstractArray{<:Real}=r; dims=:) =
     _softmax!(r, x, dims)
 
 """
