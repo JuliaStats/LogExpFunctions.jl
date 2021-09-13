@@ -34,27 +34,36 @@ function ChainRulesCore.rrule(::typeof(logsumexp), x::AbstractArray{<:Real}; dim
     return Ω, logsumexp_pullback
 end
 
-function ChainRulesCore.frule(
-    (_, _, Δx), ::typeof(softmax!), r::AbstractArray{<:Real}, x::AbstractArray{<:Real},
-)
-    softmax!(r, x)
-    _Δx = reshape(Δx, size(r))
-    Δr = r .* (_Δx .- LinearAlgebra.dot(r, _Δx))
-    return r, Δr
-end
-function ChainRulesCore.rrule(
-    ::typeof(softmax!), r::AbstractArray{<:Real}, x::AbstractArray{<:Real},
-)
-    softmax!(r, x)
-    project_x = ChainRulesCore.ProjectTo(x)
-    rcopy = copy(reshape(r, size(x)))
-    function softmax!_pullback(r̄)
-        _r̄ = reshape(r̄, size(rcopy))
-        x̄ = ChainRulesCore.InplaceableThunk(
-            Δ -> Δ .+= rcopy .* (_r̄ .- LinearAlgebra.dot(rcopy, _r̄)),
-            ChainRulesCore.@thunk(project_x(rcopy .* (_r̄ .- LinearAlgebra.dot(rcopy, _r̄)))),
-        )
-        return ChainRulesCore.NoTangent(), ChainRulesCore.ZeroTangent(), x̄
+# no rules for mutating functions currently:
+# https://juliadiff.org/ChainRulesCore.jl/stable/writing_good_rules.html#Which-functions-need-rules?
+function ChainRulesCore.frule((_, Δx), ::typeof(softmax), x::AbstractArray{<:Real}; dims=:)
+    Ω = softmax(x; dims=dims)
+    ΔΩ = if dims === (:)
+        Ω .* (Δx .- LinearAlgebra.dot(Ω, Δx))
+    else
+        ΩΔx = Ω .* Δx
+        ΩΔx .- Ω .* sum(ΩΔx; dims=dims)
     end
-    return r, softmax!_pullback
+    return Ω, ΔΩ
+end
+function ChainRulesCore.rrule(::typeof(softmax), x::AbstractArray{<:Real}; dims=:)
+    Ω = softmax(x; dims=dims)
+    Ωcopy = copy(Ω)
+    project_x = ChainRulesCore.ProjectTo(x)
+    function softmax_pullback(Ω̄)
+        x̄ = if dims === (:)
+            ChainRulesCore.InplaceableThunk(
+                Δ -> Δ .+= Ωcopy .* (Ω̄ .- LinearAlgebra.dot(Ωcopy, Ω̄)),
+                ChainRulesCore.@thunk(project_x(Ωcopy .* (Ω̄ .- LinearAlgebra.dot(Ωcopy, Ω̄)))),
+            )
+        else
+            ΩcopyΩ̄  = Ωcopy .* Ω̄
+            ChainRulesCore.InplaceableThunk(
+                Δ -> Δ .+= ΩcopyΩ̄  .- Ωcopy .* sum(ΩcopyΩ̄; dims=dims),
+                ChainRulesCore.@thunk(project_x(ΩcopyΩ̄  .- Ωcopy .* sum(ΩcopyΩ̄; dims=dims))),
+            )
+        end
+        return ChainRulesCore.NoTangent(), x̄
+    end
+    return Ω, softmax_pullback
 end

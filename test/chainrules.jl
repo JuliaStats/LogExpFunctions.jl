@@ -76,9 +76,13 @@
     end
 
     for x in (randn(10), randn(10, 8))
-        for r in (similar(x), similar(x, 1, size(x)...))
-            test_frule(softmax!, r, x)
-            test_rrule(softmax!, r, x)
+        test_frule(softmax, x)
+        test_rrule(softmax, x)
+
+        for dims in (1, 1:2, 2)
+            all(d <= ndims(x) for d in dims) || continue
+            test_frule(softmax, x; fkwargs=(dims=dims,))
+            test_rrule(softmax, x; fkwargs=(dims=dims,))
         end
     end
 end
