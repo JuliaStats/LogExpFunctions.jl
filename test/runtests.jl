@@ -1,5 +1,6 @@
 using LogExpFunctions
 using ChainRulesTestUtils
+using InverseFunctions
 using OffsetArrays
 
 using Random
@@ -9,3 +10,4 @@ Random.seed!(1234)
 
 include("basicfuns.jl")
 include("chainrules.jl")
+include("inverse.jl")
