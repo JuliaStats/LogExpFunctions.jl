@@ -4,6 +4,7 @@ using DocStringExtensions: SIGNATURES
 using Base: Math.@horner
 
 import ChainRulesCore
+import ChangesOfVariables
 import InverseFunctions
 import IrrationalConstants
 import LinearAlgebra
@@ -16,5 +17,6 @@ include("basicfuns.jl")
 include("logsumexp.jl")
 include("chainrules.jl")
 include("inverse.jl")
+include("with_logabsdet_jacobian.jl")
 
 end # module

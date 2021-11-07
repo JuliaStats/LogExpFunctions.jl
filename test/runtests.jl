@@ -1,5 +1,7 @@
 using LogExpFunctions
+using ChainRulesCore
 using ChainRulesTestUtils
+using ChangesOfVariables
 using InverseFunctions
 using OffsetArrays
 
@@ -11,3 +13,4 @@ Random.seed!(1234)
 include("basicfuns.jl")
 include("chainrules.jl")
 include("inverse.jl")
+include("with_logabsdet_jacobian.jl")
