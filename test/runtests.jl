@@ -1,5 +1,4 @@
 using LogExpFunctions
-using ChainRulesCore
 using ChainRulesTestUtils
 using ChangesOfVariables
 using InverseFunctions
