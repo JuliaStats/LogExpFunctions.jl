@@ -27,3 +27,11 @@ function ChangesOfVariables.with_logabsdet_jacobian(::typeof(logistic), x::Real)
     y = logistic(x)
     y, log(y * (1 - y))
 end
+
+function ChangesOfVariables.with_logabsdet_jacobian(::typeof(logcosh), x::Real)
+    abs_x = abs(x)
+    a = - 2 * abs_x
+    z = log1pexp(a)
+    y = abs_x + z - IrrationalConstants.logtwo
+    return y, log1mexp(a) - z
+end

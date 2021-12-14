@@ -16,4 +16,7 @@
     ChangesOfVariables.test_with_logabsdet_jacobian(logistic, x, derivative)
 
     ChangesOfVariables.test_with_logabsdet_jacobian(logit, rand(), derivative)
+
+    ChangesOfVariables.test_with_logabsdet_jacobian(logcosh, x, derivative)
+    ChangesOfVariables.test_with_logabsdet_jacobian(logcosh, -x, derivative)
 end
