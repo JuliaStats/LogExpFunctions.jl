@@ -94,7 +94,9 @@ logit(x::Real) = log(x / (one(x) - x))
 """
 $(SIGNATURES)
 
-Return `log(cosh(x))`.
+Return `log(cosh(x))`, carefully evaluated without intermediate calculation of `cosh(x)`.
+
+The implementation ensures `logcosh(-x) = logcosh(x)`.
 """
 function logcosh(x::Real)
     abs_x = abs(x)
