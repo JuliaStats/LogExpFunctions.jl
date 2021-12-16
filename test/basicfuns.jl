@@ -54,6 +54,22 @@ end
     @test logit(logistic(2)) ≈ 2.0
 end
 
+@testset "logcosh" begin
+    for x in (randn(), randn(Float32))
+        @test @inferred(logcosh(x)) isa typeof(x)
+        @test logcosh(x) ≈ log(cosh(x))
+        @test logcosh(-x) == logcosh(x)
+    end
+
+    # special values
+    for x in (-Inf, Inf, -Inf32, Inf32)
+        @test @inferred(logcosh(x)) === oftype(x, Inf)
+    end
+    for x in (NaN, NaN32)
+        @test @inferred(logcosh(x)) === x
+    end
+end
+
 @testset "log1psq" begin
     @test iszero(log1psq(0.0))
     @test log1psq(1.0) ≈ log1p(1.0)

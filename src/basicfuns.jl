@@ -94,6 +94,18 @@ logit(x::Real) = log(x / (one(x) - x))
 """
 $(SIGNATURES)
 
+Return `log(cosh(x))`, carefully evaluated without intermediate calculation of `cosh(x)`.
+
+The implementation ensures `logcosh(-x) = logcosh(x)`.
+"""
+function logcosh(x::Real)
+    abs_x = abs(x)
+    return abs_x + log1pexp(- 2 * abs_x) - IrrationalConstants.logtwo
+end
+
+"""
+$(SIGNATURES)
+
 Return `log(1+x^2)` evaluated carefully for `abs(x)` very small or very large.
 """
 log1psq(x::Real) = log1p(abs2(x))

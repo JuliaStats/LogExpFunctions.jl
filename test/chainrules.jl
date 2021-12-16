@@ -31,6 +31,11 @@
         test_rrule(logistic, x; rtol=1f-3, atol=1f-3)
     end
 
+    for x in (-randexp(), randexp())
+        test_frule(logcosh, x)
+        test_rrule(logcosh, x)
+    end
+
     # test all branches of `log1pexp`
     for x in (-20.9, 15.4, 41.5)
         test_frule(log1pexp, x)
