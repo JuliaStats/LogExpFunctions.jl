@@ -52,11 +52,11 @@ function _logsumexp_onepass_reduce(X, ::Base.HasEltype)
     isconcretetype(T) || return _logsumexp_onepass_reduce(X, Base.EltypeUnknown())
 
     FT = float(T)
-    return reduce(_logsumexp_onepass_op, X; init=(FT(-Inf), zero(FT)))
+    return foldl(_logsumexp_onepass_op, X; init=(FT(-Inf), zero(FT)))
 end
 
 # iterables without known element type
-_logsumexp_onepass_reduce(X, ::Base.EltypeUnknown) = reduce(_logsumexp_onepass_op, X)
+_logsumexp_onepass_reduce(X, ::Base.EltypeUnknown) = foldl(_logsumexp_onepass_op, X)
 
 ## Reductions for one-pass algorithm: avoid expensive multiplications if numbers are reduced
 
