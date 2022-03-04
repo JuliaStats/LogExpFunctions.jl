@@ -13,6 +13,27 @@
         end
     end
 
+    @testset "xexpx" begin
+        # regular branch
+        test_scalar(xexpx, randn())
+        # special cases (manually since FiniteDifferences/ChainRulesTestUtils fails at -Inf)
+        @test @inferred(frule((NoTangent(), rand()), xexpx, -Inf)) === (0.0, 0.0)
+        Ω, back = @inferred(rrule(xexpx, -Inf))
+        @test Ω === 0.0
+        @test back(rand()) === (NoTangent(), 0.0)
+    end
+
+    @testset "xexpy" begin
+        # regular branch
+        test_frule(xexpy, randn(), randn())
+        test_rrule(xexpy, randn(), randn())
+        # special cases (manually since FiniteDifferences/ChainRulesTestUtils fails at -Inf)
+        @test @inferred(frule((NoTangent(), rand(), rand()), xexpy, x, -Inf)) === (0.0, 0.0)
+        Ω, back = @inferred(rrule(xexpy, x, -Inf))
+        @test Ω === 0.0
+        @test back(rand()) === (NoTangent(), 0.0, 0.0)
+    end
+
     test_frule(logit, x)
     test_rrule(logit, x)
 
