@@ -110,15 +110,17 @@ end
 # log1pexp, log1mexp, log2mexp & logexpm1
 
 @testset "log1pexp" begin
-    @test log1pexp(2.0)    ≈ log(1.0 + exp(2.0))
-    @test log1pexp(-2.0)   ≈ log(1.0 + exp(-2.0))
-    @test log1pexp(10000)  ≈ 10000.0
-    @test log1pexp(-10000) ≈ 0.0
+    # test every branch
+    for x in (0, 1, 2, 10, 20, 40), T in (Int, Float32, Float64)
+        @test (@inferred log1pexp(-T(x))) ≈ log1p(exp(big(-x)))
+        @test (@inferred log1pexp(+T(x))) ≈ log1p(exp(big(+x)))
+    end
 
-    @test log1pexp(2f0)      ≈ log(1f0 + exp(2f0))
-    @test log1pexp(-2f0)     ≈ log(1f0 + exp(-2f0))
-    @test log1pexp(10000f0)  ≈ 10000f0
-    @test log1pexp(-10000f0) ≈ 0f0
+    # large arguments
+    @test (@inferred log1pexp(1e4)) ≈ 1e4
+    @test (@inferred log1pexp(1f4)) ≈ 1f4
+    @test iszero(@inferred log1pexp(-1e4))
+    @test iszero(@inferred log1pexp(-1f4))
 end
 
 @testset "log1mexp" begin
