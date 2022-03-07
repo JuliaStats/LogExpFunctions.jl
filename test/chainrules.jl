@@ -57,14 +57,11 @@
         test_rrule(logcosh, x)
     end
 
-    # test all branches of `log1pexp`
-    for x in (-20.9, 15.4, 41.5)
-        test_frule(log1pexp, x)
-        test_rrule(log1pexp, x)
-    end
-    for x in (8.3f0, 12.5f0, 21.2f0)
-        test_frule(log1pexp, x; rtol=1f-3, atol=1f-3)
-        test_rrule(log1pexp, x; rtol=1f-3, atol=1f-3)
+    @testset "log1pexp" begin
+        for absx in (0, 1, 2, 10, 15, 20, 40), x in (-absx, absx)
+            test_scalar(log1pexp, Float64(x))
+            test_scalar(log1pexp, Float32(x); rtol=1f-3, atol=1f-3)
+        end
     end
 
     for x in (-10.2, -3.3, -0.3)

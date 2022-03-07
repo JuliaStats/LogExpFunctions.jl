@@ -110,10 +110,19 @@ end
 # log1pexp, log1mexp, log2mexp & logexpm1
 
 @testset "log1pexp" begin
-    # test every branch
-    for x in (0, 1, 2, 10, 20, 40), T in (Int, Float32, Float64)
-        @test (@inferred log1pexp(-T(x))) ≈ log1p(exp(big(-x)))
-        @test (@inferred log1pexp(+T(x))) ≈ log1p(exp(big(+x)))
+    # generic method
+    @test (@inferred log1pexp(big(0))) ≈ log(big(2))
+    for x in 1:10, s in (-1, 1)
+        @test (@inferred log1pexp(log(big(x)))) ≈ log(big(1 + x))
+        @test (@inferred log1pexp(-log(big(x)))) ≈ log(big(1 + 1//x))
+        @test (@inferred log1pexp(big(x))) ≈ log(1 + exp(big(x)))
+        @test (@inferred log1pexp(-big(x))) ≈ log(1 + exp(-big(x)))
+    end
+
+    # test branches of specialized approximations
+    for x in (0, 1, 2, 10, 15, 20, 40), T in (Float16, Float32, Float64)
+        @test (@inferred log1pexp(-T(x))) ≈ T(log1pexp(big(-x)))
+        @test (@inferred log1pexp(+T(x))) ≈ T(log1pexp(big(+x)))
     end
 
     # large arguments

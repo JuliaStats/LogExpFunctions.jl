@@ -152,9 +152,58 @@ Return `log(1+exp(x))` evaluated carefully for largish `x`.
 
 This is also called the ["softplus"](https://en.wikipedia.org/wiki/Rectifier_(neural_networks))
 transformation, being a smooth approximation to `max(0,x)`. Its inverse is [`logexpm1`](@ref).
+
+See:
+ * Martin Maechler (2012) [“Accurately Computing log(1 − exp(− |a|))”](http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf)
+
+Note: different than Maechler (2012), also uses bounds specific to Float32 and Float16.
 """
-log1pexp(x::Real) = x ≤ -37 ? exp(x) : x ≤ 18 ? log1p(exp(x)) : x ≤ 33.3 ? x + exp(-x) : float(x)
-log1pexp(x::Float32) = x < 9f0 ? log1p(exp(x)) : x < 16f0 ? x + exp(-x) : oftype(exp(-x), x)
+function log1pexp(x::Real)
+    if x > _log1pexp_thresh(x)
+        return float(x)
+    else
+        t = log1p(exp(-abs(x)))
+        return x ≤ 0 ? t : t + x
+    end
+end
+
+# threshold `thresh` such that `log1pexp(x) == x` for `x > thresh`
+_log1pexp_thresh(::Float64) = 33.27106466687738
+_log1pexp_thresh(::Float32) = 14.556091f0
+_log1pexp_thresh(::Float16) = Float16(6.24)
+_log1pexp_thresh(::BigFloat) = 172.5936479594263820448907982430859654507995334557035582760493223638550118704546
+_log1pexp_thresh(::Real) = _log1pexp_thresh(0.0)
+
+# _log1p(x::Real) = log1p(x)
+# _log1p(x::Real, thresh::Real) = abs(x) ≤ thresh ? x : oftype(x, log1p(x))
+# _log1p(x::Float16) = _log1p(x, exp(-7))
+# _log1p(x::Float32) = _log1p(x, exp(-15))
+# _log1p(x::Float64) = _log1p(x, exp(-37))
+
+# function log1pexp(x::Union{Float16,Float32,Float64})
+# 	a, b, c = _log1pexp_branch_bounds(x)
+#     if x ≤ a
+#         return exp(x)
+#     elseif x ≤ b
+#         return log1p(exp(x))
+#     elseif x ≤ c
+#         return x + exp(-x)
+#     else
+#         return x
+#     end
+# end
+
+#=
+Given the `approx` used in a branch of log1pexp(x) above, we find the first `x` (from above
+or below) that is a root of
+
+    T(log1pexp(big(x))) - approx(T(x))
+
+This determines the branch bounds below.
+=#
+@inline _log1pexp_branch_bounds(::Float64) = (-37.0, 18.0, 33.3)
+@inline _log1pexp_branch_bounds(::Float32) = (-15f0, 9f0, 14.5f0)
+@inline _log1pexp_branch_bounds(::Float16) = Float16.((-7, 3, 5.7))
 
 """
 $(SIGNATURES)
