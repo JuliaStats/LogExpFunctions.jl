@@ -44,6 +44,37 @@
     @test iszero(xlog1py(0 + im * 0, -1 + im * Inf))
 end
 
+@testset "xexpx" begin
+    for x in (false, 0, 0.0, 0f0, -Inf, -Inf32)
+        @test (@inferred xexpx(x)) === zero(exp(x))
+    end
+    for x in (NaN16, NaN32, NaN64, Inf16, Inf32, Inf64)
+        @test (@inferred xexpx(x)) === x
+    end
+    for x in (1, true, 1.0, 1f0)
+        @test (@inferred xexpx(x)) === exp(x)
+    end
+    for a in (2, 2f0, 2.0), x in -a:a
+        @test (@inferred xexpx(x)) === x * exp(x)
+    end
+end
+
+@testset "xexpy" begin
+    for x in (0, 1, 1.0, 1f0, Inf, Inf32), y in (-Inf, -Inf32)
+        @test (@inferred xexpy(x, y)) === zero(x * exp(y))
+    end
+    for x in (0, 1, 1.0, 1f0, Inf, Inf32, -Inf, -Inf32, NaN, NaN32), nan in (NaN, NaN32)
+        @test (@inferred xexpy(x, nan)) === oftype(x * exp(nan), NaN)
+        @test (@inferred xexpy(nan, x)) === oftype(nan * exp(x), NaN)
+    end
+    for x in (2, -2f0, 2.0), y in (1, -1f0, 1.0)
+        @test (@inferred xexpy(x, y)) ≈ x * exp(y)
+    end
+    for x in (randn(), randn(Float32))
+        @test xexpy(x, x) ≈ xexpx(x)
+    end
+end
+
 @testset "logistic & logit" begin
     @test logistic(2) ≈ 1.0 / (1.0 + exp(-2.0))
     @test logistic(-750.0) === 0.0

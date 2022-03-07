@@ -2,6 +2,44 @@ ChainRulesCore.@scalar_rule(xlogx(x::Real), (1 + log(x),))
 ChainRulesCore.@scalar_rule(xlogy(x::Real, y::Real), (log(y), x / y,))
 ChainRulesCore.@scalar_rule(xlog1py(x::Real, y::Real), (log1p(y), x / (1 + y),))
 
+function ChainRulesCore.frule((_, Δx), ::typeof(xexpx), x::Real)
+    expx = exp(x)
+    if iszero(expx)
+        Ω = expx
+        ΔΩ = expx * Δx
+    else
+        Ω = x * expx
+        ΔΩ = (1 + x) * expx * Δx
+    end
+    return Ω, ΔΩ
+end
+
+function ChainRulesCore.rrule(::typeof(xexpx), x::Real)
+    expx = exp(x)
+    Ω = iszero(expx) ? expx : x * expx
+    function xexpx_pullback(ΔΩ)
+        Δx = iszero(expx) ? expx * ΔΩ : (1 + x) * expx * ΔΩ
+        return (ChainRulesCore.NoTangent(), Δx)
+    end
+    return Ω, xexpx_pullback
+end
+
+function ChainRulesCore.frule((_, Δx, Δy), ::typeof(xexpy), x::Real, y::Real)
+    expy = exp(y)
+    result = x * expy
+    Ω = iszero(expy) && !isnan(x) ? zero(result) : result
+    ΔΩ = expy * Δx + Ω * Δy
+    return Ω, ΔΩ
+end
+
+function ChainRulesCore.rrule(::typeof(xexpy), x::Real, y::Real)
+    expy = exp(y)
+    result = x * expy
+    Ω = iszero(expy) && !isnan(x) ? zero(result) : result
+    xexpy_pullback(ΔΩ) = (ChainRulesCore.NoTangent(), ΔΩ * expy, ΔΩ * Ω)
+    return Ω, xexpy_pullback
+end
+
 ChainRulesCore.@scalar_rule(logistic(x::Real), (Ω * (1 - Ω),))
 ChainRulesCore.@scalar_rule(logit(x::Real), (inv(x * (1 - x)),))
 ChainRulesCore.@scalar_rule(logcosh(x::Real), tanh(x))

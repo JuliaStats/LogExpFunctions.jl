@@ -10,6 +10,8 @@ LogExpFunctions supports [`InverseFunctions.inverse`](https://github.com/JuliaMa
 xlogx
 xlogy
 xlog1py
+xexpx
+xexpy
 logistic
 logit
 logcosh

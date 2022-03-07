@@ -44,6 +44,37 @@ function xlog1py(x::Number, y::Number)
     return iszero(x) && !isnan(y) ? zero(result) : result
 end
 
+"""
+$(SIGNATURES)
+
+Return `x * exp(x)` for `x > -Inf`, or zero if `x == -Inf`.
+
+```jldoctest
+julia> xexpx(-Inf)
+0.0
+```
+"""
+function xexpx(x::Real)
+    expx = exp(x)
+    return iszero(expx) ? expx : x * expx
+end
+
+"""
+$(SIGNATURES)
+
+Return `x * exp(y)` for `y > -Inf`, or zero if `y == -Inf`.
+
+```jldoctest
+julia> xexpy(1.0, -Inf)
+0.0
+```
+"""
+function xexpy(x::Real, y::Real)
+    expy = exp(y)
+    result = x * expy
+    return iszero(expy) && !isnan(x) ? zero(result) : result
+end
+
 # The following bounds are precomputed versions of the following abstract
 # function, but the implicit interface for AbstractFloat doesn't uniformly
 # enforce that all floating point types implement nextfloat and prevfloat.
