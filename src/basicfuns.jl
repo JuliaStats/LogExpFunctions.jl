@@ -171,14 +171,14 @@ function log1pexp(_x::Real)
 end
 
 #=
-returns a thresholds x0, x1, x2 such that:
+Returns a thresholds x0, x1, x2 such that:
 
     * log1pexp(x) ≈ exp(x) for x ≤ x0
     * log1pexp(x) ≈ log1p(exp(x)) for x0 < x ≤ x1
     * log1pexp(x) ≈ x + exp(-x) for x1 < x ≤ x2
     * log1pexp(x) ≈ x for x > x2
 
-where the tolerances of the approximations ≈ are on the order of eps(T)
+where the tolerances of the approximations ≈ are on the order of eps(T).
 =#
 @inline @generated function _log1pexp_thresholds(::T) where {T<:Real}
     ϵ = big(eps(T))
@@ -187,6 +187,12 @@ where the tolerances of the approximations ≈ are on the order of eps(T)
     x2 = -x0 - log(-x0) * (1 + 1 / x0) # ≈ root of e^-x == x * ϵ/2
     return (T(x0), T(x1), T(x2))
 end
+#= For Float64, Float32 we can hard-code the thresholds to (hopefully) reduce compilation
+times. We will use here the exact same thresholds that were used before the function
+_log1pexp_thresholds (which outputs close but not identical threshods) was introduced,
+to decrease the risk of introducing breaking changes. =#
+@inline _log1pexp_thresholds(::Float64) = (-37e0, 18e0, 33e0)
+@inline _log1pexp_thresholds(::Float32) = (-17f0, 9f0, 16f0)
 
 """
 $(SIGNATURES)
