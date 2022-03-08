@@ -185,9 +185,17 @@ returns a thresholds x0, x1, x2 such that:
     return F.((x0, x1, x2))
 end
 
-# tighter thresholds can be obtained numerically for common types
-_log1pexp_thresholds(::Float64) = (-37.0, 18.0, 33.0)
-_log1pexp_thresholds(::Float32) = (-16.635532f0, 7.9711924f0, 15.9458f0)
+#=
+Tighter thresholds can be obtained numerically for common types.
+In particular a tight x2 can be obtained by finding the root of:
+
+log(1 + exp(-x)) / log(1 + exp(x)) == eps(T) / 2
+
+which is the relative error between log(1 + exp(x)) and the approximation x.
+=#
+_log1pexp_thresholds(::Float64) = (-37.0, 18.0, 33.0) # original bounds from Maechler 2012
+_log1pexp_thresholds(::Float32) = (-16.635532f0, 7.9711924f0, 13.9967f0)
+_log1pexp_thresholds(::Float16) = (Float16(-7.625), Float16(3.465), Float16(5.85535))
 
 """
 $(SIGNATURES)
