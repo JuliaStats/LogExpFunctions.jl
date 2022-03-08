@@ -171,10 +171,13 @@ end
 
 #=
 returns a thresholds x0, x1, x2 such that:
+
     * log1pexp(x) ≈ exp(x) for x ≤ x0
     * log1pexp(x) ≈ log1p(exp(x)) for x0 < x ≤ x1
     * log1pexp(x) ≈ x + exp(-x) for x1 < x ≤ x2
     * log1pexp(x) ≈ x for x > x2
+
+where the tolerances of the approximations ≈ are on the order of eps(T)
 =#
 @inline @generated function _log1pexp_thresholds(::T) where {T<:Real}
     F = float(T)
