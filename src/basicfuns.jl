@@ -176,7 +176,7 @@ returns a thresholds x0, x1, x2 such that:
     * log1pexp(x) ≈ x + exp(-x) for x1 < x ≤ x2
     * log1pexp(x) ≈ x for x > x2
 =#
-@generated function _log1pexp_thresholds(::T) where {T<:Real}
+@inline @generated function _log1pexp_thresholds(::T) where {T<:Real}
     F = float(T)
     ϵ = big(eps(F))
     x0 = log(ϵ / 2)
@@ -193,9 +193,9 @@ log(1 + exp(-x)) / log(1 + exp(x)) == eps(T) / 2
 
 which is the relative error between log(1 + exp(x)) and the approximation x.
 =#
-_log1pexp_thresholds(::Float64) = (-37.0, 18.0, 33.0) # original bounds from Maechler 2012
-_log1pexp_thresholds(::Float32) = (-16.635532f0, 7.9711924f0, 13.9967f0)
-_log1pexp_thresholds(::Float16) = (Float16(-7.625), Float16(3.465), Float16(5.85535))
+@inline _log1pexp_thresholds(::Float64) = (-37.0, 18.0, 33.0) # original bounds from Maechler 2012
+@inline _log1pexp_thresholds(::Float32) = (-16.635532f0, 7.9711924f0, 13.9967f0)
+@inline _log1pexp_thresholds(::Float16) = (Float16(-7.625), Float16(3.465), Float16(5.85535))
 
 """
 $(SIGNATURES)
