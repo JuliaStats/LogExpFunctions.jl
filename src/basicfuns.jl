@@ -159,20 +159,16 @@ See:
 Note: different than Maechler (2012), also uses bounds specific to Float32 and Float16.
 """
 function log1pexp(x::Real)
-    if x > _log1pexp_thresh(x)
-        return float(x)
+    threshold = _log1pexp_threshold(x)
+    if x > threshold # log1pexp(x) ≈ x for large x
+        return oftype(threshold, x)
     else
-        t = log1p(exp(-abs(x)))
-        return x ≤ 0 ? t : t + x
-    end
+    	return log1p(exp(x))
+  	end
 end
 
-# threshold `thresh` such that `log1pexp(x) == x` for `x > thresh`
-_log1pexp_thresh(::Float64) = 33.27106466687738
-_log1pexp_thresh(::Float32) = 14.556091f0
-_log1pexp_thresh(::Float16) = Float16(6.24)
-_log1pexp_thresh(::BigFloat) = 172.5936479594263820448907982430859654507995334557035582760493223638550118704546
-_log1pexp_thresh(::Real) = _log1pexp_thresh(0.0)
+# returns a threshold such that log1pexp(x) ≈ x for x > threshold
+@generated _log1pexp_threshold(::T) where {T<:Real} = -log(expm1(eps(float(T))/2))
 
 """
 $(SIGNATURES)
