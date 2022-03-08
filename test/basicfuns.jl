@@ -110,26 +110,25 @@ end
 # log1pexp, log1mexp, log2mexp & logexpm1
 
 @testset "log1pexp" begin
-    # generic method
-    @test (@inferred log1pexp(big(0))) ≈ log(big(2))
-    for x in 1:10, s in (-1, 1)
-        @test (@inferred log1pexp(log(big(x)))) ≈ log(big(1 + x))
-        @test (@inferred log1pexp(-log(big(x)))) ≈ log(big(1 + 1//x))
-        @test (@inferred log1pexp(big(x))) ≈ log(1 + exp(big(x)))
-        @test (@inferred log1pexp(-big(x))) ≈ log(1 + exp(-big(x)))
+    for x in 1:40, T in (Float16, Float32, Float64, BigFloat)
+        @test (@inferred log1pexp(+log(T(x)))) ≈ T(log1p(big(x)))
+        @test (@inferred log1pexp(-log(T(x)))) ≈ T(log1p(1/big(x)))
     end
-
-    # test branches of specialized approximations
-    for x in (0, 1, 2, 10, 15, 20, 40), T in (Float16, Float32, Float64)
-        @test (@inferred log1pexp(-T(x))) ≈ T(log1pexp(big(-x)))
-        @test (@inferred log1pexp(+T(x))) ≈ T(log1pexp(big(+x)))
-    end
+    @test (@inferred log1pexp(0)) ≈ log(2)
+    @test (@inferred log1pexp(0f0)) ≈ log(2)
+    @test (@inferred log1pexp(big(0))) ≈ log(2)
 
     # large arguments
     @test (@inferred log1pexp(1e4)) ≈ 1e4
     @test (@inferred log1pexp(1f4)) ≈ 1f4
     @test iszero(@inferred log1pexp(-1e4))
     @test iszero(@inferred log1pexp(-1f4))
+
+    # compare to accurate but slower implementation
+    correct_log1pexp(x::Real) = x > 0 ? x + log1p(exp(-x)) : log1p(exp(x))
+    for x in -40:40, T in (Float16, Float32, Float64, BigFloat)
+        @test (@inferred log1pexp(T(x))) ≈ T(correct_log1pexp(big(x)))
+    end
 end
 
 @testset "log1mexp" begin
