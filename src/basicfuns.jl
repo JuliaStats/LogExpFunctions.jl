@@ -165,7 +165,7 @@ function log1pexp(x::Real)
     elseif x ≤ x2
         return x + exp(-x)
     else
-        return oftype(x0, x)
+        return float(x)
     end
 end
 
