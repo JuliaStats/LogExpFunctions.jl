@@ -189,7 +189,7 @@ where the tolerances of the approximations ≈ are on the order of eps(T).
 end
 #= For Float64, Float32 we can hard-code the thresholds to (hopefully) reduce compilation
 times. We will use here the exact same thresholds that were used before the function
-_log1pexp_thresholds (which outputs close but not identical threshods) was introduced,
+_log1pexp_thresholds (which outputs close but not identical thresholds) was introduced,
 to decrease the risk of introducing breaking changes. =#
 @inline _log1pexp_thresholds(::Float64) = (-37e0, 18e0, 33e0)
 @inline _log1pexp_thresholds(::Float32) = (-17f0, 9f0, 16f0)
