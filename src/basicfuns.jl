@@ -157,42 +157,37 @@ See:
  * Martin Maechler (2012) [“Accurately Computing log(1 − exp(− |a|))”](http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf)
 """
 function log1pexp(x::Real)
-    thresh_lin = _log1pexp_threshold_x2(x)
-    if x > thresh_lin
-        return oftype(thresh_lin, x)
-    elseif x > _log1pexp_threshold_x1(x)
-        return x + exp(-x)
-    elseif x ≤ _log1pexp_threshold_exp(x)
+    x0, x1, x2 = _log1pexp_thresholds(x)
+    if x ≤ x0
         return exp(x)
+    elseif x ≤ x1
+        return log1p(exp(x))
+    elseif x ≤ x2
+        return x + exp(-x)
     else
-    	return log1p(exp(x))
-  	end
+        return oftype(x0, x)
+    end
 end
 
-# returns a threshold such that log1pexp(x) ≈ x for x > threshold
-@generated function _log1pexp_threshold_x2(::T) where {T<:Real}
+#=
+returns a thresholds x0, x1, x2 such that:
+    * log1pexp(x) ≈ exp(x) for x ≤ x0
+    * log1pexp(x) ≈ log1p(exp(x)) for x0 < x ≤ x1
+    * log1pexp(x) ≈ x + exp(-x) for x1 < x ≤ x2
+    * log1pexp(x) ≈ x for x > x2
+=#
+@generated function _log1pexp_thresholds(::T) where {T<:Real}
     F = float(T)
-    thresh = -log(expm1(big(eps(F)) / 2))
-    return convert(F, max(thresh, log(big(ℯ) - 1)))
-end
-# tighter thresholds can be obtained numerically. Since this is the fastest branch,
-# we can do it here for common types.
-_log1pexp_threshold_x2(::Float64) = 33.3e0
-_log1pexp_threshold_x2(::Float32) = 15.9f0
-
-# returns a threshold such that log1pexp(x) ≈ x + exp(-x) for x > threshold
-@generated function _log1pexp_threshold_x1(::T) where {T<:Real}
-    F = float(T)
-    thresh = -log(big(eps(F))) / 2
-    return convert(F, max(thresh, log(big(ℯ) - 1)))
+    ϵ = big(eps(F))
+    x0 = log(ϵ / 2)
+    x1 = -log(ϵ) / 2
+    x2 = -log(expm1(ϵ / 2))
+    return F.((x0, x1, x2))
 end
 
-# returns a threshold such that log1pexp(x) ≈ exp(x) for x < threshold
-@generated function _log1pexp_threshold_exp(::T) where {T<:Real}
-	F = float(T)
-	thresh = log(big(eps(F)) / 2)
-	return convert(F, thresh)
-end
+# tighter thresholds can be obtained numerically for common types
+_log1pexp_thresholds(::Float64) = (-37.0, 18.0, 33.0)
+_log1pexp_thresholds(::Float32) = (-16.635532f0, 7.9711924f0, 15.9458f0)
 
 """
 $(SIGNATURES)
