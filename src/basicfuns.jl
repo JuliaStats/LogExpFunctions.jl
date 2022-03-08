@@ -178,19 +178,23 @@ Returns thresholds x0, x1, x2 such that:
     * log1pexp(x) ≈ x + exp(-x) for x1 < x ≤ x2
     * log1pexp(x) ≈ x for x > x2
 
-where the tolerances of the approximations ≈ are on the order of eps(T).
+where the tolerances of the approximations are on the order of eps(typeof(x)).
+For types for which `precision(x)` depends only on the type of `x`, the compiler
+should optimize away all computations done here.
 =#
-@inline @generated function _log1pexp_thresholds(::T) where {T<:Real}
-    ϵ = big(eps(T))
-    x0 = log(ϵ / 2)
-    x1 = -log(ϵ) / 2
-    x2 = -x0 - log(-x0) * (1 + 1 / x0) # ≈ root of e^-x == x * ϵ/2 via asymptotics of Lambert's W function
-    return (T(x0), T(x1), T(x2))
+@inline function _log1pexp_thresholds(x::Real)
+    z = (precision(x) - 1) * oftype(float(x), IrrationalConstants.logtwo)
+    x0 = -z - IrrationalConstants.logtwo
+    x1 = z / 2
+    x2 = -x0 - log(-x0) * (1 + 1 / x0) # approximate root of e^-x == x * ϵ/2 via asymptotics of Lambert's W function
+    return (x0, x1, x2)
 end
-#= For Float64, Float32 we can hard-code the thresholds to (hopefully) reduce compilation
-times. We will use here the exact same thresholds that were used before the function
-_log1pexp_thresholds (which outputs close but not identical thresholds) was introduced,
-or those from Maechler 2012, to decrease the risk of introducing breaking changes. =#
+
+#= For Float64, Float32 we can hard-code the thresholds to make absolutely sure they are not
+recompued each time. For Float64 we use the same exact thresholds given by Maechler 2012,
+since these were the ones used before _log1pexp_thresholds was introduced (which outputs
+close but not identical thresholds), to reduce any (small) risk of breakage.
+For Float32 we use truncated versions of the output of _log1pexp_thresholds.  =#
 @inline _log1pexp_thresholds(::Float64) = (-37e0, 18e0, 33e0)
 @inline _log1pexp_thresholds(::Float32) = (-17f0, 9f0, 16f0)
 
