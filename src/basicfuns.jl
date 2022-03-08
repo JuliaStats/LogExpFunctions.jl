@@ -171,7 +171,7 @@ function log1pexp(_x::Real)
 end
 
 #=
-Returns a thresholds x0, x1, x2 such that:
+Returns thresholds x0, x1, x2 such that:
 
     * log1pexp(x) ≈ exp(x) for x ≤ x0
     * log1pexp(x) ≈ log1p(exp(x)) for x0 < x ≤ x1
