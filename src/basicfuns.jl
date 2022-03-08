@@ -156,7 +156,8 @@ transformation, being a smooth approximation to `max(0,x)`. Its inverse is [`log
 See:
  * Martin Maechler (2012) [“Accurately Computing log(1 − exp(− |a|))”](http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf)
 """
-function log1pexp(x::Real)
+function log1pexp(_x::Real)
+    x = float(_x)
     x0, x1, x2 = _log1pexp_thresholds(x)
     if x < x0
         return exp(x)
@@ -165,7 +166,7 @@ function log1pexp(x::Real)
     elseif x < x2
         return x + exp(-x)
     else
-        return float(x)
+        return x
     end
 end
 
@@ -180,12 +181,11 @@ returns a thresholds x0, x1, x2 such that:
 where the tolerances of the approximations ≈ are on the order of eps(T)
 =#
 @inline @generated function _log1pexp_thresholds(::T) where {T<:Real}
-    F = float(T)
-    ϵ = big(eps(F))
+    ϵ = big(eps(T))
     x0 = log(ϵ / 2)
     x1 = -log(ϵ) / 2
     x2 = -x0 - log(-x0) * (1 + 1 / x0) # ≈ root of e^-x == x * ϵ/2
-    return (F(x0), F(x1), F(x2))
+    return (T(x0), T(x1), T(x2))
 end
 
 """
