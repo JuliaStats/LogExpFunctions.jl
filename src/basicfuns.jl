@@ -158,11 +158,11 @@ See:
 """
 function log1pexp(x::Real)
     x0, x1, x2 = _log1pexp_thresholds(x)
-    if x ≤ x0
+    if x < x0
         return exp(x)
-    elseif x ≤ x1
+    elseif x < x1
         return log1p(exp(x))
-    elseif x ≤ x2
+    elseif x < x2
         return x + exp(-x)
     else
         return float(x)
@@ -184,7 +184,7 @@ where the tolerances of the approximations ≈ are on the order of eps(T)
     ϵ = big(eps(F))
     x0 = log(ϵ / 2)
     x1 = -log(ϵ) / 2
-    x2 = -x0 - log(-x0) * (1 + 1 / x0) # root of e^-x == x * ϵ/2
+    x2 = -x0 - log(-x0) * (1 + 1 / x0) # ≈ root of e^-x == x * ϵ/2
     return (F(x0), F(x1), F(x2))
 end
 
