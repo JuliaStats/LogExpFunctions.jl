@@ -170,9 +170,8 @@ function log1pexp(_x::Real)
     end
 end
 
-#= The precision of BigFloat cannot be computed from the type only.
-Since computing the dynamically thresholds is slow, prefer to use
-a slower but accurate implementation in this case. =#
+#= The precision of BigFloat cannot be computed from the type only and computing
+thresholds is slow. Therefore prefer version without thresholds in this case. =#
 function log1pexp(x::BigFloat)
     if x > 0
         return x + log1p(exp(-x))
