@@ -126,7 +126,7 @@ end
 
     # compare to accurate but slower implementation
     correct_log1pexp(x::Real) = x > 0 ? x + log1p(exp(-x)) : log1p(exp(x))
-    for x in -40:40, T in (Float16, Float32, Float64, BigFloat)
+    for x in -300:300, T in (Float16, Float32, Float64, BigFloat)
         @test (@inferred log1pexp(T(x))) ≈ T(correct_log1pexp(big(x)))
     end
 end
