@@ -185,7 +185,7 @@ where the tolerances of the approximations ≈ are on the order of eps(T)
     x0 = log(ϵ / 2)
     x1 = -log(ϵ) / 2
     x2 = -log(ϵ/2) - log(-log(ϵ/2)) - log(-log(ϵ/2)) / log(ϵ/2) # root of e^-x == x * ϵ/2
-    return F.((x0, x1, x2))
+    return (F(x0), F(x1), F(x2))
 end
 
 """
