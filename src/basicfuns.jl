@@ -168,7 +168,12 @@ function log1pexp(x::Real)
 end
 
 # returns a threshold such that log1pexp(x) ≈ x for x > threshold
-@generated _log1pexp_threshold(::T) where {T<:Real} = -log(expm1(eps(float(T))/2))
+@generated function _log1pexp_threshold(::T) where {T<:Real}
+    F = float(T)
+    ϵ = big(eps(F)) / 2
+    thresh = -log(expm1(ϵ))
+    return convert(F, thresh)
+end
 
 """
 $(SIGNATURES)
