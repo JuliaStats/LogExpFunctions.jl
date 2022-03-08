@@ -155,36 +155,43 @@ transformation, being a smooth approximation to `max(0,x)`. Its inverse is [`log
 
 See:
  * Martin Maechler (2012) [“Accurately Computing log(1 − exp(− |a|))”](http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf)
-
-Note: different than Maechler (2012), also uses bounds specific to Float32 and Float16.
 """
 function log1pexp(x::Real)
-    thresh_lin = _log1pexp_threshold_linear(x)
+    thresh_lin = _log1pexp_threshold_x2(x)
     if x > thresh_lin
         return oftype(thresh_lin, x)
-    elseif x > _log1pexp_threshold_exp(x)
+    elseif x > _log1pexp_threshold_x1(x)
         return x + exp(-x)
+    elseif x ≤ _log1pexp_threshold_exp(x)
+        return exp(x)
     else
     	return log1p(exp(x))
   	end
 end
 
 # returns a threshold such that log1pexp(x) ≈ x for x > threshold
-@generated function _log1pexp_threshold_linear(::T) where {T<:Real}
+@generated function _log1pexp_threshold_x2(::T) where {T<:Real}
     F = float(T)
     thresh = -log(expm1(big(eps(F)) / 2))
     return convert(F, max(thresh, log(big(ℯ) - 1)))
 end
 # tighter thresholds can be obtained numerically. Since this is the fastest branch,
-# we do it here for common types.
-@generated _log1pexp_threshold_linear(::Float64) = 33.3e0
-@generated _log1pexp_threshold_linear(::Float32) = 15.9f0
+# we can do it here for common types.
+_log1pexp_threshold_x2(::Float64) = 33.3e0
+_log1pexp_threshold_x2(::Float32) = 15.9f0
 
 # returns a threshold such that log1pexp(x) ≈ x + exp(-x) for x > threshold
-@generated function _log1pexp_threshold_exp(::T) where {T<:Real}
+@generated function _log1pexp_threshold_x1(::T) where {T<:Real}
     F = float(T)
     thresh = -log(big(eps(F))) / 2
     return convert(F, max(thresh, log(big(ℯ) - 1)))
+end
+
+# returns a threshold such that log1pexp(x) ≈ exp(x) for x < threshold
+@generated function _log1pexp_threshold_exp(::T) where {T<:Real}
+	F = float(T)
+	thresh = log(big(eps(F)) / 2)
+	return convert(F, thresh)
 end
 
 """
