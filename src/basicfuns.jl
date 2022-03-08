@@ -184,7 +184,7 @@ where the tolerances of the approximations ≈ are on the order of eps(T).
     ϵ = big(eps(T))
     x0 = log(ϵ / 2)
     x1 = -log(ϵ) / 2
-    x2 = -x0 - log(-x0) * (1 + 1 / x0) # ≈ root of e^-x == x * ϵ/2
+    x2 = -x0 - log(-x0) * (1 + 1 / x0) # ≈ root of e^-x == x * ϵ/2 via asymptotics of Lambert's W function
     return (T(x0), T(x1), T(x2))
 end
 #= For Float64, Float32 we can hard-code the thresholds to (hopefully) reduce compilation
