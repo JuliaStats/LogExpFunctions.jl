@@ -110,7 +110,7 @@ end
 # log1pexp, log1mexp, log2mexp & logexpm1
 
 @testset "log1pexp" begin
-    for x in 1:40, T in (Float16, Float32, Float64, BigFloat)
+    @testset "log1pexp($x::$T)" for T in (Float16, Float32, Float64, BigFloat), x in 1:40
         @test (@inferred log1pexp(+log(T(x)))) ≈ T(log1p(big(x)))
         @test (@inferred log1pexp(-log(T(x)))) ≈ T(log1p(1/big(x)))
     end
@@ -130,7 +130,8 @@ end
 
     # compare to accurate but slower implementation
     correct_log1pexp(x::Real) = x > 0 ? x + log1p(exp(-x)) : log1p(exp(x))
-    for x in -300:300, T in (Float16, Float32, Float64, BigFloat)
+    # large range needed to cover all branches, for all floats (from Float16 to BigFloat)
+    @testset "log1pexp($x::$T)" for T in (Float16, Float32, Float64, BigFloat), x in -300:300
         @test (@inferred log1pexp(T(x))) ≈ T(correct_log1pexp(big(x)))
     end
 end
