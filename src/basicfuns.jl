@@ -196,17 +196,12 @@ should optimize away all computations done here.
 end
 
 #=
-For common types we hard-code the thresholds to make absolutely sure they are not
-recomputed each time. Also, _log1pexp_thresholds is not completely elided by the
-compiler in Julia 1.0 / 1.6. We round the outputs of the non-hardcoded version:
-
-* _log1pexp_thresholds(::Float64) = (-36.7368005696771, 18.021826694558577, 33.23111882352963)
-* _log1pexp_thresholds(::Float32) = (-16.635532f0, 7.9711924f0, 13.993f0)
-* _log1pexp_thresholds(::Float16) = (-7.625, 3.467, 5.86)
+For common types we hard-code the thresholds to make absolutely sure they are not recomputed
+each time. Also, _log1pexp_thresholds is not elided by the compiler in Julia 1.0 / 1.6.
 =#
-@inline _log1pexp_thresholds(::Float64) = (-37e0, 18e0, 33e0) # same as Maechler 2012
-@inline _log1pexp_thresholds(::Float32) = (-17f0, 8f0, 14f0)
-@inline _log1pexp_thresholds(::Float16) = (Float16(-7.6), Float16(3.5), Float16(5.9))
+@inline _log1pexp_thresholds(::Float64) = (-36.7368005696771, 18.021826694558577, 33.23111882352963)
+@inline _log1pexp_thresholds(::Float32) = (-16.635532f0, 7.9711924f0, 13.993f0)
+@inline _log1pexp_thresholds(::Float16) = (Float16(-7.625), Float16(3.467), Float16(5.86))
 
 """
 $(SIGNATURES)
