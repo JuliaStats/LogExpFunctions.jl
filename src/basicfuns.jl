@@ -202,7 +202,7 @@ should optimize away all computations done here.
 end
 
 #= For Float64, Float32 we can hard-code the thresholds to make absolutely sure they are not
-recompued each time. Also, _log1pexp_thresholds is not completely elided by the
+recomputed each time. Also, _log1pexp_thresholds is not completely elided by the
 compiler in Julia 1.0 / 1.6 which LogExpFunctions intends to support.
 For Float64 we use the same exact thresholds given by Maechler 2012,
 since these were the ones used before _log1pexp_thresholds was introduced (which outputs
