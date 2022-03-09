@@ -172,13 +172,7 @@ end
 
 #= The precision of BigFloat cannot be computed from the type only and computing
 thresholds is slow. Therefore prefer version without thresholds in this case. =#
-function log1pexp(x::BigFloat)
-    if x > 0
-        return x + log1p(exp(-x))
-    else
-        return log1p(exp(x))
-    end
-end
+log1pexp(x::BigFloat) = x > 0 ? x + log1p(exp(-x)) : log1p(exp(x))
 
 #=
 Returns thresholds x0, x1, x2 such that:
