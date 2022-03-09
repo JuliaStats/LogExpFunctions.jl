@@ -193,9 +193,10 @@ For types for which `precision(x)` depends only on the type of `x`, the compiler
 should optimize away all computations done here.
 =#
 @inline function _log1pexp_thresholds(x::Real)
-    z = (precision(x) - 1) * oftype(x, IrrationalConstants.logtwo)
-    x0 = -z - IrrationalConstants.logtwo
-    x1 = z / 2
+    prec = precision(x)
+    logtwo = oftype(x, IrrationalConstants.logtwo)
+    x0 = -prec * logtwo
+    x1 = (prec - 1) * logtwo / 2
     x2 = -x0 - log(-x0) * (1 + 1 / x0) # approximate root of e^-x == x * ϵ/2 via asymptotics of Lambert's W function
     return (x0, x1, x2)
 end
