@@ -134,6 +134,15 @@ end
     @testset "log1pexp($x::$T)" for T in (Float16, Float32, Float64, BigFloat), x in -300:300
         @test (@inferred log1pexp(T(x))) ≈ T(correct_log1pexp(big(x)))
     end
+
+    # test BigFloat with multiple precisions
+    @testset "log1pexp($x) prec=$prec" for prec in (10, 20, 50, 100), x in -300:300
+        expected = correct_log1pexp(big(x))
+        setprecision(prec) do
+            actual = @inferred log1pexp(big(float(x)))
+            @test actual ≈ expected
+        end
+    end
 end
 
 @testset "log1mexp" begin
