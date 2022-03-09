@@ -114,9 +114,13 @@ end
         @test (@inferred log1pexp(+log(T(x)))) ≈ T(log1p(big(x)))
         @test (@inferred log1pexp(-log(T(x)))) ≈ T(log1p(1/big(x)))
     end
+
+    # special values
     @test (@inferred log1pexp(0)) ≈ log(2)
     @test (@inferred log1pexp(0f0)) ≈ log(2)
     @test (@inferred log1pexp(big(0))) ≈ log(2)
+    @test (@inferred log1pexp(+1)) ≈ log1p(ℯ)
+    @test (@inferred log1pexp(-1)) ≈ log1p(ℯ) - 1
 
     # large arguments
     @test (@inferred log1pexp(1e4)) ≈ 1e4
