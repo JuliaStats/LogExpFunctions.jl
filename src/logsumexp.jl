@@ -126,3 +126,17 @@ function _logsumexp_onepass_op(xmax1::T, xmax2::T, r1::R, r2::R) where {T<:Numbe
     end
     return xmax, r
 end
+
+"""
+$(SIGNATURES)
+
+Compute `log.(sum!(r, exp.(X); dims=dims))`, summing over the singleton dimensions of `r`,
+and overwriting `r` with the results.
+The calculation is done in a numerically stable way that avoids intermediate
+over- and underflow.
+"""
+function logsumexp!(r::AbstractArray, X::AbstractArray)
+	m = maximum!(similar(r), X)
+	sum!(r, exp.(X .- m))
+	return r .= log.(r) .+ m
+end

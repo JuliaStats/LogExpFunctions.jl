@@ -10,8 +10,8 @@ import IrrationalConstants
 import LinearAlgebra
 
 export xlogx, xlogy, xlog1py, xexpx, xexpy, logistic, logit, log1psq, log1pexp, log1mexp, log2mexp, logexpm1,
-    softplus, invsoftplus, log1pmx, logmxp1, logaddexp, logsubexp, logsumexp, softmax,
-    softmax!, logcosh
+    softplus, invsoftplus, log1pmx, logmxp1, logaddexp, logsubexp, logsumexp, logsumexp!,
+    softmax, softmax!, logcosh
 
 include("basicfuns.jl")
 include("logsumexp.jl")

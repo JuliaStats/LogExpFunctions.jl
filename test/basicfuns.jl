@@ -266,6 +266,13 @@ end
     @test @inferred(logsumexp(x for x in xs)) == logsumexp(xs)
 end
 
+@testset "logsumexp!" begin
+    X = randn(4,3,2)
+    r = randn(1,3,2)
+    @inferred logsumexp!(r, X)
+    @test r ≈ logsumexp(X; dims=1)
+end
+
 @testset "softmax" begin
     x = [1.0, 2.0, 3.0]
     r = exp.(x) ./ sum(exp.(x))
