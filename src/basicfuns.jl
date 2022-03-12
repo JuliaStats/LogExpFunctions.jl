@@ -156,8 +156,11 @@ transformation, being a smooth approximation to `max(0,x)`. Its inverse is [`log
 See:
  * Martin Maechler (2012) [“Accurately Computing log(1 − exp(− |a|))”](http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf)
 """
-function log1pexp(_x::Real)
-    x = float(_x)
+log1pexp(x::Real) = _log1pexp(float(x)) # ensures that BigInt/BigFloat, Int/Float64 etc. dispatch to the same algorithm
+
+# Approximations based on Maechler (2012)
+# Argument `x` is a floating point number due to the definition of `log1pexp` above
+function _log1pexp(x::Real)
     x0, x1, x2 = _log1pexp_thresholds(x)
     if x < x0
         return exp(x)
@@ -172,7 +175,7 @@ end
 
 #= The precision of BigFloat cannot be computed from the type only and computing
 thresholds is slow. Therefore prefer version without thresholds in this case. =#
-log1pexp(x::BigFloat) = x > 0 ? x + log1p(exp(-x)) : log1p(exp(x))
+_log1pexp(x::BigFloat) = x > 0 ? x + log1p(exp(-x)) : log1p(exp(x))
 
 #=
 Returns thresholds x0, x1, x2 such that:

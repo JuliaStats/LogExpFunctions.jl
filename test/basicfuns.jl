@@ -110,7 +110,7 @@ end
 # log1pexp, log1mexp, log2mexp & logexpm1
 
 @testset "log1pexp" begin
-    @testset "log1pexp($x::$T)" for T in (Float16, Float32, Float64, BigFloat), x in 1:40
+    for T in (Float16, Float32, Float64, BigFloat), x in 1:40
         @test (@inferred log1pexp(+log(T(x)))) ≈ T(log1p(big(x)))
         @test (@inferred log1pexp(-log(T(x)))) ≈ T(log1p(1/big(x)))
     end
@@ -131,16 +131,14 @@ end
     # compare to accurate but slower implementation
     correct_log1pexp(x::Real) = x > 0 ? x + log1p(exp(-x)) : log1p(exp(x))
     # large range needed to cover all branches, for all floats (from Float16 to BigFloat)
-    @testset "log1pexp($x::$T)" for T in (Float16, Float32, Float64, BigFloat), x in -300:300
-        @test (@inferred log1pexp(T(x))) ≈ T(correct_log1pexp(big(x)))
+    for T in (Int, Float16, Float32, Float64, BigInt, BigFloat), x in -300:300
+        @test (@inferred log1pexp(T(x))) ≈ float(T)(correct_log1pexp(big(x)))
     end
-
     # test BigFloat with multiple precisions
-    @testset "log1pexp($x) prec=$prec" for prec in (10, 20, 50, 100), x in -300:300
-        expected = correct_log1pexp(big(x))
+    for prec in (10, 20, 50, 100), x in -300:300
         setprecision(prec) do
-            actual = @inferred log1pexp(big(float(x)))
-            @test actual ≈ expected
+            y = big(float(x))
+            @test @inferred(log1pexp(y)) ≈ correct_log1pexp(y)
         end
     end
 end
