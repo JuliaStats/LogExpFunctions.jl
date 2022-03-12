@@ -25,6 +25,7 @@ logmxp1
 logaddexp
 logsubexp
 logsumexp
+logsumexp!
 softmax!
 softmax
 ```

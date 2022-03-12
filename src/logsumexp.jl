@@ -10,6 +10,8 @@ pass over the data.
 # References
 
 [Sebastian Nowozin: Streaming Log-sum-exp Computation](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
+
+See also [`logsumexp!`]
 """
 logsumexp(X) = _logsumexp_onepass(X)
 
@@ -24,8 +26,31 @@ The result is computed using a single pass over the data.
 # References
 
 [Sebastian Nowozin: Streaming Log-sum-exp Computation](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
+
+See also [`logsumexp!`](@ref)
 """
 logsumexp(X::AbstractArray{<:Number}; dims=:) = _logsumexp(X, dims)
+
+"""
+$(SIGNATURES)
+
+Compute `out .= log.(sum!(out, exp.(X)))` in a numerically stable way that avoids
+intermediate over- and underflow.
+
+The result is computed using a single pass over the data.
+
+# References
+
+[Sebastian Nowozin: Streaming Log-sum-exp Computation](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
+
+See also [`logsumexp`](@ref)
+"""
+function logsumexp!(out::AbstractArray{<:Number}, X::AbstractArray{<:Number})
+    FT = eltype(out)
+    xmax_r = fill!(similar(out, Tuple{FT,FT}), (FT(-Inf), zero(FT)))
+    Base.reducedim!(_logsumexp_onepass_op, xmax_r, X)
+    return @. out = first(xmax_r) + log1p(last(xmax_r))
+end
 
 _logsumexp(X::AbstractArray{<:Number}, ::Colon) = _logsumexp_onepass(X)
 function _logsumexp(X::AbstractArray{<:Number}, dims)
