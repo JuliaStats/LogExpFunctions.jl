@@ -136,7 +136,7 @@ The calculation is done in a numerically stable way that avoids intermediate
 over- and underflow.
 """
 function logsumexp!(r::AbstractArray, X::AbstractArray)
-	m = maximum!(similar(r), X)
-	sum!(r, exp.(X .- m))
-	return r .= log.(r) .+ m
+    m = maximum!(similar(r), X)
+    sum!(r, exp.(X .- m))
+    return r .= log.(r) .+ m
 end
