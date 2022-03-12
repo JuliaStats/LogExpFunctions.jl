@@ -195,15 +195,31 @@ end
 
     _x = [[1.0, 2.0, 3.0] [1.0, 2.0, 3.0] .+ 1000.]
     for x in (_x, complex(_x))
-        @test @inferred(logsumexp(x; dims=1)) ≈ [3.40760596444438 1003.40760596444438]
-        @test @inferred(logsumexp(x; dims=[1, 2])) ≈ [1003.4076059644444]
+        expected = [3.40760596444438 1003.40760596444438]
+        @test @inferred(logsumexp(x; dims=1)) ≈ expected
+        out = Array{eltype(x)}(undef, 1, 2)
+        @test @inferred(logsumexp!(out, x)) ≈ expected
+        @test out ≈ expected
+
         y = copy(x')
-        @test @inferred(logsumexp(y; dims=2)) ≈ [3.40760596444438, 1003.40760596444438]
+        expected = [3.40760596444438, 1003.40760596444438]
+        @test @inferred(logsumexp(y; dims=2)) ≈ expected
+        out = Array{eltype(x)}(undef, 2)
+        @test @inferred(logsumexp!(out, x)) ≈ expected
+        @test out ≈ expected
+
+        expected = [1003.4076059644444]
+        @test @inferred(logsumexp(x; dims=[1, 2])) ≈ expected
+        out = Array{eltype(x)}(undef, 1, 2)
+        @test @inferred(logsumexp!(out, x)) ≈ expected
+        @test out ≈ expected
     end
 
     # check underflow
     @test logsumexp([1e-20, log(1e-20)]) ≈ 2e-20
     @test logsumexp(Complex{Float64}[1e-20, log(1e-20)]) ≈ 2e-20
+    @test logsumexp!([1.0], [1e-20, log(1e-20)]) ≈ [2e-20]
+    @test logsumexp!(Complex{Float64}[1.0], Complex{Float64}[1e-20, log(1e-20)]) ≈ [2e-20]
 
     let cases = [([-Inf, -Inf], -Inf),   # correct handling of all -Inf
                  ([-Inf, -Inf32], -Inf), # promotion
