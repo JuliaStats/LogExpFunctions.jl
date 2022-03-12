@@ -232,6 +232,15 @@ end
             @test logaddexp(arguments...) ≡ result
             @test logsumexp(arguments) ≡ result
             @test logsumexp(complex(arguments)) ≡ complex(result)
+
+            FT = float(eltype(arguments))
+            out = [one(FT)]
+            @test logsumexp!(out, arguments)[1] ≡ result
+            @test out[1] ≡ result
+
+            out = [one(complex(FT))]
+            @test logsumexp!(out, complex(arguments))[1] ≡ complex(result)
+            @test out[1] ≡ complex(result)
         end
     end
 
@@ -266,6 +275,15 @@ end
     @test isnan(logsumexp(Complex{Float64}[NaN * im, 9.0]))
     @test isnan(logsumexp(Complex{Float64}[NaN * im, Inf]))
     @test isnan(logsumexp(Complex{Float64}[NaN * im, -Inf]))
+    @test isnan(logsumexp!([1.0], [NaN, 9.0])[1])
+    @test isnan(logsumexp!([1.0], [NaN, Inf])[1])
+    @test isnan(logsumexp!([1.0], [NaN, -Inf])[1])
+    @test isnan(logsumexp!(Complex{Float64}[1.0], Complex{Float64}[NaN, 9.0])[1])
+    @test isnan(logsumexp!(Complex{Float64}[1.0], Complex{Float64}[NaN, Inf])[1])
+    @test isnan(logsumexp!(Complex{Float64}[1.0], Complex{Float64}[NaN, -Inf])[1])
+    @test isnan(logsumexp!(Complex{Float64}[1.0], Complex{Float64}[NaN * im, 9.0])[1])
+    @test isnan(logsumexp!(Complex{Float64}[1.0], Complex{Float64}[NaN * im, Inf])[1])
+    @test isnan(logsumexp!(Complex{Float64}[1.0], Complex{Float64}[NaN * im, -Inf])[1])
 
     # logsumexp with general iterables (issue #63)
     xs = range(-500, stop = 10, length = 1000)
