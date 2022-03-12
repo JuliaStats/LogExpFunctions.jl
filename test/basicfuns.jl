@@ -271,6 +271,11 @@ end
     r = randn(1,3,2)
     @inferred logsumexp!(r, X)
     @test r ≈ logsumexp(X; dims=1)
+
+    X = [1e-20, log(1e-20)]
+    r = [1.3]
+    @inferred logsumexp!(r, X)
+    @test_broken r ≈ logsumexp(X; dims=1)
 end
 
 @testset "softmax" begin
