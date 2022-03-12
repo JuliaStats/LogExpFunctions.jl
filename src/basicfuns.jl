@@ -152,9 +152,59 @@ Return `log(1+exp(x))` evaluated carefully for largish `x`.
 
 This is also called the ["softplus"](https://en.wikipedia.org/wiki/Rectifier_(neural_networks))
 transformation, being a smooth approximation to `max(0,x)`. Its inverse is [`logexpm1`](@ref).
+
+See:
+ * Martin Maechler (2012) [“Accurately Computing log(1 − exp(− |a|))”](http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf)
 """
-log1pexp(x::Real) = x < 18.0 ? log1p(exp(x)) : x < 33.3 ? x + exp(-x) : oftype(exp(-x), x)
-log1pexp(x::Float32) = x < 9.0f0 ? log1p(exp(x)) : x < 16.0f0 ? x + exp(-x) : oftype(exp(-x), x)
+log1pexp(x::Real) = _log1pexp(float(x)) # ensures that BigInt/BigFloat, Int/Float64 etc. dispatch to the same algorithm
+
+# Approximations based on Maechler (2012)
+# Argument `x` is a floating point number due to the definition of `log1pexp` above
+function _log1pexp(x::Real)
+    x0, x1, x2 = _log1pexp_thresholds(x)
+    if x < x0
+        return exp(x)
+    elseif x < x1
+        return log1p(exp(x))
+    elseif x < x2
+        return x + exp(-x)
+    else
+        return x
+    end
+end
+
+#= The precision of BigFloat cannot be computed from the type only and computing
+thresholds is slow. Therefore prefer version without thresholds in this case. =#
+_log1pexp(x::BigFloat) = x > 0 ? x + log1p(exp(-x)) : log1p(exp(x))
+
+#=
+Returns thresholds x0, x1, x2 such that:
+
+    * log1pexp(x) ≈ exp(x) for x ≤ x0
+    * log1pexp(x) ≈ log1p(exp(x)) for x0 < x ≤ x1
+    * log1pexp(x) ≈ x + exp(-x) for x1 < x ≤ x2
+    * log1pexp(x) ≈ x for x > x2
+
+where the tolerances of the approximations are on the order of eps(typeof(x)).
+For types for which `precision(x)` depends only on the type of `x`, the compiler
+should optimize away all computations done here.
+=#
+@inline function _log1pexp_thresholds(x::Real)
+    prec = precision(x)
+    logtwo = oftype(x, IrrationalConstants.logtwo)
+    x0 = -prec * logtwo
+    x1 = (prec - 1) * logtwo / 2
+    x2 = -x0 - log(-x0) * (1 + 1 / x0) # approximate root of e^-x == x * ϵ/2 via asymptotics of Lambert's W function
+    return (x0, x1, x2)
+end
+
+#=
+For common types we hard-code the thresholds to make absolutely sure they are not recomputed
+each time. Also, _log1pexp_thresholds is not elided by the compiler in Julia 1.0 / 1.6.
+=#
+@inline _log1pexp_thresholds(::Float64) = (-36.7368005696771, 18.021826694558577, 33.23111882352963)
+@inline _log1pexp_thresholds(::Float32) = (-16.635532f0, 7.9711924f0, 13.993f0)
+@inline _log1pexp_thresholds(::Float16) = (Float16(-7.625), Float16(3.467), Float16(5.86))
 
 """
 $(SIGNATURES)
