@@ -137,6 +137,7 @@ over- and underflow.
 """
 function logsumexp!(r::AbstractArray, X::AbstractArray)
     m = maximum!(similar(r), X)
-    sum!(r, exp.(X .- m))
-    return r .= log.(r) .+ m
+    c = sum!(similar(r), X .== m)
+    sum!(r, (X .< m) .* exp.(X .- m))
+    return r .= log.(c) .+ log1p.(r ./ c) .+ m
 end
