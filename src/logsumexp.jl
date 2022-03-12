@@ -34,10 +34,10 @@ logsumexp(X::AbstractArray{<:Number}; dims=:) = _logsumexp(X, dims)
 """
 $(SIGNATURES)
 
-Compute `out .= log.(sum!(out, exp.(X)))` in a numerically stable way that avoids
-intermediate over- and underflow.
+Compute `out .= log.(sum!(out, exp.(X)))`.
 
-The result is computed using a single pass over the data.
+The result is computed in a numerically stable way that avoids
+intermediate over- and underflow using a single pass over the data.
 
 # References
 
