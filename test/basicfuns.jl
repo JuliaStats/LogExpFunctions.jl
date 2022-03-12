@@ -204,8 +204,8 @@ end
         y = copy(x')
         expected = [3.40760596444438, 1003.40760596444438]
         @test @inferred(logsumexp(y; dims=2)) ≈ expected
-        out = Array{eltype(x)}(undef, 2)
-        @test @inferred(logsumexp!(out, x)) ≈ expected
+        out = Array{eltype(y)}(undef, 2)
+        @test @inferred(logsumexp!(out, y)) ≈ expected
         @test out ≈ expected
 
         expected = [1003.4076059644444]
