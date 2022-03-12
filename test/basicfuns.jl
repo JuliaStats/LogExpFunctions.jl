@@ -210,7 +210,7 @@ end
 
         expected = [1003.4076059644444]
         @test @inferred(logsumexp(x; dims=[1, 2])) ≈ expected
-        out = Array{eltype(x)}(undef, 1, 2)
+        out = Array{eltype(x)}(undef, 1, 1)
         @test @inferred(logsumexp!(out, x)) ≈ expected
         @test out ≈ expected
     end
