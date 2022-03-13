@@ -1,11 +1,12 @@
 """
 $(SIGNATURES)
 
-Compute `log(sum(exp, X))` in a numerically stable way that avoids intermediate over- and
-underflow.
+Compute `log(sum(exp, X))`.
 
-`X` should be an iterator of real or complex numbers. The result is computed using a single
-pass over the data.
+`X` should be an iterator of real or complex numbers.
+The result is computed in a numerically stable way that avoids intermediate over- and underflow, using a single pass over the data.
+
+See also [`logsumexp!`](@ref).
 
 # References
 
@@ -16,16 +17,37 @@ logsumexp(X) = _logsumexp_onepass(X)
 """
 $(SIGNATURES)
 
-Compute `log.(sum(exp.(X); dims=dims))` in a numerically stable way that avoids
-intermediate over- and underflow.
+Compute `log.(sum(exp.(X); dims=dims))`.
 
-The result is computed using a single pass over the data.
+The result is computed in a numerically stable way that avoids intermediate over- and underflow, using a single pass over the data.
+
+See also [`logsumexp!`](@ref).
 
 # References
 
 [Sebastian Nowozin: Streaming Log-sum-exp Computation](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
 """
 logsumexp(X::AbstractArray{<:Number}; dims=:) = _logsumexp(X, dims)
+
+"""
+$(SIGNATURES)
+
+Compute [`logsumexp`](@ref) of `X` over the singleton dimensions of `out`, and write results to `out`.
+
+The result is computed in a numerically stable way that avoids intermediate over- and underflow, using a single pass over the data.
+
+See also [`logsumexp`](@ref).
+
+# References
+
+[Sebastian Nowozin: Streaming Log-sum-exp Computation](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
+"""
+function logsumexp!(out::AbstractArray{<:Number}, X::AbstractArray{<:Number})
+    FT = eltype(out)
+    xmax_r = fill!(similar(out, Tuple{FT,FT}), (FT(-Inf), zero(FT)))
+    Base.reducedim!(_logsumexp_onepass_op, xmax_r, X)
+    return @. out = first(xmax_r) + log1p(last(xmax_r))
+end
 
 _logsumexp(X::AbstractArray{<:Number}, ::Colon) = _logsumexp_onepass(X)
 function _logsumexp(X::AbstractArray{<:Number}, dims)
