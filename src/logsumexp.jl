@@ -1,33 +1,31 @@
 """
 $(SIGNATURES)
 
-Compute `log(sum(exp, X))` in a numerically stable way that avoids intermediate over- and
-underflow.
+Compute `log(sum(exp, X))`.
 
-`X` should be an iterator of real or complex numbers. The result is computed using a single
-pass over the data.
+`X` should be an iterator of real or complex numbers.
+The result is computed in a numerically stable way that avoids intermediate over- and underflow, using a single pass over the data.
+
+See also [`logsumexp!`](@ref).
 
 # References
 
 [Sebastian Nowozin: Streaming Log-sum-exp Computation](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
-
-See also [`logsumexp!`]
 """
 logsumexp(X) = _logsumexp_onepass(X)
 
 """
 $(SIGNATURES)
 
-Compute `log.(sum(exp.(X); dims=dims))` in a numerically stable way that avoids
-intermediate over- and underflow.
+Compute `log.(sum(exp.(X); dims=dims))`.
 
-The result is computed using a single pass over the data.
+The result is computed in a numerically stable way that avoids intermediate over- and underflow, using a single pass over the data.
+
+See also [`logsumexp!`](@ref).
 
 # References
 
 [Sebastian Nowozin: Streaming Log-sum-exp Computation](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
-
-See also [`logsumexp!`](@ref)
 """
 logsumexp(X::AbstractArray{<:Number}; dims=:) = _logsumexp(X, dims)
 
@@ -36,13 +34,13 @@ $(SIGNATURES)
 
 Compute [`logsumexp`](@ref) of `X` over the singleton dimensions of `out`, and write results to `out`.
 
-The result is computed in a numerically stable way that avoids intermediate over- and underflow using a single pass over the data.
+The result is computed in a numerically stable way that avoids intermediate over- and underflow, using a single pass over the data.
+
+See also [`logsumexp`](@ref).
 
 # References
 
 [Sebastian Nowozin: Streaming Log-sum-exp Computation](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
-
-See also [`logsumexp`](@ref)
 """
 function logsumexp!(out::AbstractArray{<:Number}, X::AbstractArray{<:Number})
     FT = eltype(out)
