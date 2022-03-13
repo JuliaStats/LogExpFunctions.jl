@@ -298,6 +298,13 @@ end
     @test @inferred(logsumexp(xs; dims=2)) ≈ log.(sum(exp.(xs); dims=2))
     @test @inferred(logsumexp(xs; dims=[1, 2])) ≈ log(sum(exp.(xs); dims=[1, 2]))
     @test @inferred(logsumexp(x for x in xs)) == logsumexp(xs)
+
+    # output arrays with abstract eltype
+    xs = randn(2, 4)
+    out = [missing, 1.0]
+    expected = logsumexp(xs; dims=2)
+    @test logsumexp!(out, xs) ≈ expected
+    @test out ≈ expected
 end
 
 @testset "softmax" begin

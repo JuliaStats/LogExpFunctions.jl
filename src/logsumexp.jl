@@ -42,8 +42,8 @@ See also [`logsumexp`](@ref).
 
 [Sebastian Nowozin: Streaming Log-sum-exp Computation](http://www.nowozin.net/sebastian/blog/streaming-log-sum-exp-computation.html)
 """
-function logsumexp!(out::AbstractArray{<:Number}, X::AbstractArray{<:Number})
-    FT = eltype(out)
+function logsumexp!(out::AbstractArray, X::AbstractArray{<:Number})
+    FT = float(eltype(X))
     xmax_r = fill!(similar(out, Tuple{FT,FT}), (FT(-Inf), zero(FT)))
     Base.reducedim!(_logsumexp_onepass_op, xmax_r, X)
     return @. out = first(xmax_r) + log1p(last(xmax_r))
