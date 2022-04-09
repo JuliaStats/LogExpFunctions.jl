@@ -176,7 +176,8 @@ end
 end
 
 @testset "logsumexp" begin
-    for T1 in (Int, Float32, Float64), T2 in (Int, Float32, Float64)
+    Ts = (Int, Float32, Float64)
+    for T1 in Ts, T2 in Ts
         a = T1(2)
         b = T2(3)
 
