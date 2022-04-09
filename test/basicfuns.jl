@@ -176,8 +176,19 @@ end
 end
 
 @testset "logsumexp" begin
-    @test logaddexp(2.0, 3.0)     ≈ log(exp(2.0) + exp(3.0))
-    @test logaddexp(10002, 10003) ≈ 10000 + logaddexp(2.0, 3.0)
+    Ts = (Int, Float32, Float64)
+    for T1 in Ts, T2 in Ts
+        a = T1(2)
+        b = T2(3)
+
+        x = @inferred(logaddexp(a, b))
+        @test x ≈ log(exp(a) + exp(b))
+        @test typeof(x) === float(Base.promote_typeof(a, b))
+
+        y = @inferred(logaddexp(a + 10_000, b + 10_000))
+        @test y ≈ 10_000 + log(exp(a) + exp(b))
+        @test typeof(y) === typeof(x)
+    end
 
     for x in ([1.0], Complex{Float64}[1.0])
         @test @inferred(logsumexp(x)) == 1.0
