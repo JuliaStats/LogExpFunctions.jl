@@ -161,12 +161,14 @@ log1pexp(x::Real) = _log1pexp(float(x)) # ensures that BigInt/BigFloat, Int/Floa
 # Approximations based on Maechler (2012)
 # Argument `x` is a floating point number due to the definition of `log1pexp` above
 function _log1pexp(x::Real)
-    x0, x1, x2 = _log1pexp_thresholds(x)
-    if x < x0
-        return exp(x)
-    elseif x < x1
-        return log1p(exp(x))
+    x1, x2, x3, x4 = _log1pexp_thresholds(x)
+    if x < x1
+        return zero(x)
     elseif x < x2
+        return exp(x)
+    elseif x < x3
+        return log1p(exp(x))
+    elseif x < x4
         return x + exp(-x)
     else
         return x
@@ -178,12 +180,12 @@ thresholds is slow. Therefore prefer version without thresholds in this case. =#
 _log1pexp(x::BigFloat) = x > 0 ? x + log1p(exp(-x)) : log1p(exp(x))
 
 #=
-Returns thresholds x0, x1, x2 such that:
-
-    * log1pexp(x) ≈ exp(x) for x ≤ x0
-    * log1pexp(x) ≈ log1p(exp(x)) for x0 < x ≤ x1
-    * log1pexp(x) ≈ x + exp(-x) for x1 < x ≤ x2
-    * log1pexp(x) ≈ x for x > x2
+Returns thresholds x1, x2, x3, x4 such that:
+    * log1pexp(x) = 0 for x < x1
+    * log1pexp(x) ≈ exp(x) for x < x2
+    * log1pexp(x) ≈ log1p(exp(x)) for x2 ≤ x < x3
+    * log1pexp(x) ≈ x + exp(-x) for x3 ≤ x < x4
+    * log1pexp(x) ≈ x for x ≥ x4
 
 where the tolerances of the approximations are on the order of eps(typeof(x)).
 For types for which `precision(x)` depends only on the type of `x`, the compiler
@@ -192,19 +194,20 @@ should optimize away all computations done here.
 @inline function _log1pexp_thresholds(x::Real)
     prec = precision(x)
     logtwo = oftype(x, IrrationalConstants.logtwo)
-    x0 = -prec * logtwo
-    x1 = (prec - 1) * logtwo / 2
-    x2 = -x0 - log(-x0) * (1 + 1 / x0) # approximate root of e^-x == x * ϵ/2 via asymptotics of Lambert's W function
-    return (x0, x1, x2)
+    x1 = (exponent(nextfloat(zero(x))) - 1) * logtwo
+    x2 = -prec * logtwo
+    x3 = (prec - 1) * logtwo / 2
+    x4 = -x2 - log(-x2) * (1 + 1 / x2) # approximate root of e^-x == x * ϵ/2 via asymptotics of Lambert's W function
+    return (x1, x2, x3, x4)
 end
 
 #=
 For common types we hard-code the thresholds to make absolutely sure they are not recomputed
 each time. Also, _log1pexp_thresholds is not elided by the compiler in Julia 1.0 / 1.6.
 =#
-@inline _log1pexp_thresholds(::Float64) = (-36.7368005696771, 18.021826694558577, 33.23111882352963)
-@inline _log1pexp_thresholds(::Float32) = (-16.635532f0, 7.9711924f0, 13.993f0)
-@inline _log1pexp_thresholds(::Float16) = (Float16(-7.625), Float16(3.467), Float16(5.86))
+@inline _log1pexp_thresholds(::Float64) = (-745.1332191019412, -36.7368005696771, 18.021826694558577, 33.23111882352963)
+@inline _log1pexp_thresholds(::Float32) = (-103.97208f0, -16.635532f0, 7.9711924f0, 13.993f0)
+@inline _log1pexp_thresholds(::Float16) = (Float16(-17.33), Float16(-7.625), Float16(3.467), Float16(5.86))
 
 """
 $(SIGNATURES)
