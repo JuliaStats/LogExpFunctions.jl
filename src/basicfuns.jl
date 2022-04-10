@@ -309,21 +309,27 @@ Return `log(exp(x) + exp(y))`, avoiding intermediate overflow/undeflow, and hand
 non-finite values.
 """
 function logaddexp(x::Real, y::Real)
-    if isnan(x) return x end
-    if isnan(y) return y end
+    T = float(Base.promote_typeof(x, y))
+    _logaddexp(T(x), T(y))
+end
 
-    diff = zero(promote_type(typeof(x), typeof(y)))
+function _logaddexp(x::AbstractFloat, y::AbstractFloat)
     if x < y
         diff = x - y
-        x = y
-    else
+        maxval = y
+    elseif y <= x
         diff = y - x
+        maxval = x
+    else
+        T = typeof(x)
+        diff = zero(T)
+        maxval = T(NaN)
     end
 
-    if diff >= log(eps())
-        return x + log1p(exp(diff))
+    if diff < log(eps(typeof(diff))) || isnan(diff)
+        return maxval
     else
-        return x
+        return maxval + log1pexp(diff)
     end
 end
 
