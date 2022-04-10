@@ -129,9 +129,8 @@ end
     @test iszero(@inferred log1pexp(-1f4))
 
     # (almost) zero results
-    for T in (Float16, Float32, Float64)
-        @test @inferred(log1pexp(log(nextfloat(zero(T))))) === nextfloat(zero(T))
-        @test @inferred(log1pexp(log(nextfloat(zero(T))) - 1)) === zero(T)
+    for T in (Float16, Float32, Float64), x in (log(nextfloat(zero(T))), log(nextfloat(zero(T))) - 1)
+        @test @inferred(log1pexp(x)) === log1p(exp(x))
     end
 
     # hard-coded thresholds
