@@ -308,12 +308,9 @@ $(SIGNATURES)
 Return `log(exp(x) + exp(y))`, avoiding intermediate overflow/undeflow, and handling
 non-finite values.
 """
-function logaddexp(x::Real, y::Real)
-    T = float(Base.promote_typeof(x, y))
-    _logaddexp(T(x), T(y))
-end
+logaddexp(x::Real, y::Real) = logaddexp(float.(promote(x, y))...)
 
-function _logaddexp(x::AbstractFloat, y::AbstractFloat)
+function logaddexp(x::T, y::T) where T <: AbstractFloat
     if x < y
         diff = x - y
         maxval = y
@@ -321,12 +318,11 @@ function _logaddexp(x::AbstractFloat, y::AbstractFloat)
         diff = y - x
         maxval = x
     else
-        T = typeof(x)
         diff = zero(T)
         maxval = T(NaN)
     end
 
-    if diff < log(eps(typeof(diff))) || isnan(diff)
+    if diff < log(eps(T)) || isnan(diff)
         return maxval
     else
         return maxval + log1pexp(diff)
