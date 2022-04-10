@@ -128,6 +128,16 @@ end
     @test iszero(@inferred log1pexp(-1e4))
     @test iszero(@inferred log1pexp(-1f4))
 
+    # (almost) zero results
+    for T in (Float16, Float32, Float64), x in (log(nextfloat(zero(T))), log(nextfloat(zero(T))) - 1)
+        @test @inferred(log1pexp(x)) === log1p(exp(x))
+    end
+
+    # hard-coded thresholds
+    for T in (Float16, Float32, Float64)
+        @test LogExpFunctions._log1pexp_thresholds(zero(T)) === invoke(LogExpFunctions._log1pexp_thresholds, Tuple{Real}, zero(T))
+    end
+
     # compare to accurate but slower implementation
     correct_log1pexp(x::Real) = x > 0 ? x + log1p(exp(-x)) : log1p(exp(x))
     # large range needed to cover all branches, for all floats (from Float16 to BigFloat)
