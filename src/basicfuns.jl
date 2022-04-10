@@ -308,9 +308,9 @@ $(SIGNATURES)
 Return `log(exp(x) + exp(y))`, avoiding intermediate overflow/undeflow, and handling
 non-finite values.
 """
-logaddexp(x::Real, y::Real) = logaddexp(float.(promote(x, y))...)
+logaddexp(x::Real, y::Real) = _logaddexp(map(float, promote(x, y))...)
 
-function logaddexp(x::T, y::T) where T <: AbstractFloat
+function _logaddexp(x::T, y::T) where T <: Real
     if x < y
         diff = x - y
         maxval = y
