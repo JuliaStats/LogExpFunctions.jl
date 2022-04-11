@@ -314,22 +314,17 @@ non-finite values.
 logaddexp(x::Real, y::Real) = _logaddexp(map(float, promote(x, y))...)
 
 function _logaddexp(x::T, y::T) where T <: Real
+    if (isnan(x) || isnan(y)) return T(NaN) end
+
     if x < y
         diff = x - y
         maxval = y
-    elseif y <= x
+    else
         diff = y - x
         maxval = x
-    else
-        diff = zero(T)
-        maxval = T(NaN)
     end
 
-    if diff < log(eps(T)) || isnan(diff)
-        return maxval
-    else
-        return maxval + log1pexp(diff)
-    end
+    isnan(diff) ? maxval : maxval + log1pexp(diff)
 end
 
 Base.@deprecate logsumexp(x::Real, y::Real) logaddexp(x, y)
