@@ -311,19 +311,23 @@ $(SIGNATURES)
 Return `log(exp(x) + exp(y))`, avoiding intermediate overflow/undeflow, and handling
 non-finite values.
 """
-logaddexp(x::Real, y::Real) = _logaddexp(map(float, promote(x, y))...)
+function logaddexp(x::Real, y::Real)
+    a, b = map(float, promote(x, y))
+    T = typeof(a)
 
-function _logaddexp(x::T, y::T) where T <: Real
-    if (isnan(x) || isnan(y)) return T(NaN) end
+    if (isnan(a) || isnan(b)) return T(NaN) end
 
-    if x < y
-        diff = x - y
-        maxval = y
+    # Compute `maxval = max(a, b), diff = -abs(a - b)`
+    # in a faster type-stable way
+    if a < b
+        diff = a - b
+        maxval = b
     else
-        diff = y - x
-        maxval = x
+        diff = b - a
+        maxval = a
     end
 
+    # `diff` is NaN if both `a` and `b` are infinite
     isnan(diff) ? maxval : maxval + log1pexp(diff)
 end
 
