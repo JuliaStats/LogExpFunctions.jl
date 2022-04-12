@@ -312,23 +312,18 @@ Return `log(exp(x) + exp(y))`, avoiding intermediate overflow/undeflow, and hand
 non-finite values.
 """
 function logaddexp(x::Real, y::Real)
-    a, b = map(float, promote(x, y))
-    T = typeof(a)
-
-    if (isnan(a) || isnan(b)) return T(NaN) end
-
-    # Compute `maxval = max(a, b), diff = -abs(a - b)`
+    # Compute max = Base.max(x, y) and diff = x == y ? zero(x - y) : -abs(x - y)
     # in a faster type-stable way
+    a, b = promote(x, y)
     if a < b
         diff = a - b
-        maxval = b
+        max = b
     else
-        diff = b - a
-        maxval = a
+        # ensure diff = 0 if a = b = ± Inf
+        diff = a == b ? zero(a - b) : b - a
+        max = !isnan(b) ? a : b
     end
-
-    # `diff` is NaN if both `a` and `b` are infinite
-    isnan(diff) ? maxval : maxval + log1pexp(diff)
+    return max + log1pexp(diff)
 end
 
 Base.@deprecate logsumexp(x::Real, y::Real) logaddexp(x, y)
