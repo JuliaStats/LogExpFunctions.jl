@@ -312,9 +312,18 @@ Return `log(exp(x) + exp(y))`, avoiding intermediate overflow/undeflow, and hand
 non-finite values.
 """
 function logaddexp(x::Real, y::Real)
-    # ensure Δ = 0 if x = y = ± Inf
-    Δ = x == y ? zero(x - y) : abs(x - y)
-    max(x, y) + log1pexp(-Δ)
+    # Compute max = Base.max(x, y) and diff = x == y ? zero(x - y) : -abs(x - y)
+    # in a faster type-stable way
+    a, b = promote(x, y)
+    if a < b
+        diff = a - b
+        max = b
+    else
+        # ensure diff = 0 if a = b = ± Inf
+        diff = a == b ? zero(a - b) : b - a
+        max = !isnan(b) ? a : b
+    end
+    return max + log1pexp(diff)
 end
 
 Base.@deprecate logsumexp(x::Real, y::Real) logaddexp(x, y)
