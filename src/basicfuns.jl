@@ -246,6 +246,7 @@ $(SIGNATURES)
 Return `log(1 + x) - x`.
 
 Use naive calculation or range reduction outside kernel range.  Accurate ~2ulps for all `x`.
+This will fall back to the naive calculation for argument types different from `Float64`.
 """
 function log1pmx(x::Float64)
     if !(-0.7 < x < 0.9)
@@ -267,10 +268,14 @@ function log1pmx(x::Float64)
     end
 end
 
+# Naive fallback
+log1pmx(x::Real) = log1p(x) - x
+
 """
 $(SIGNATURES)
 
 Return `log(x) - x + 1` carefully evaluated.
+This will fall back to the naive calculation for argument types different from `Float64`.
 """
 function logmxp1(x::Float64)
     if x <= 0.3
@@ -285,6 +290,9 @@ function logmxp1(x::Float64)
         return log1pmx(x - 1.0)
     end
 end
+
+# Naive fallback
+logmxp1(x::Real) = (log(x) + one(x)) - x
 
 # The kernel of log1pmx
 # Accuracy within ~2ulps for -0.227 < x < 0.315
