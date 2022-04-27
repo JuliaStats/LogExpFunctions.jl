@@ -84,6 +84,10 @@
         test_rrule(logexpm1, x; rtol=1f-3, atol=1f-3)
     end
 
+    test_scalar(log1pmx, rand())
+
+    test_scalar(logmxp1, 0.5 + rand())
+
     for x in (-randexp(), randexp()), y in (-randexp(), randexp())
         test_frule(logaddexp, x, y)
         test_rrule(logaddexp, x, y)
