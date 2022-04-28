@@ -48,6 +48,8 @@ ChainRulesCore.@scalar_rule(log1pexp(x::Real), (logistic(x),))
 ChainRulesCore.@scalar_rule(log1mexp(x::Real), (-exp(x - Ω),))
 ChainRulesCore.@scalar_rule(log2mexp(x::Real), (-exp(x - Ω),))
 ChainRulesCore.@scalar_rule(logexpm1(x::Real), (exp(x - Ω),))
+ChainRulesCore.@scalar_rule(log1pmx(x::Real), (-x / (x + 1),))
+ChainRulesCore.@scalar_rule(logmxp1(x::Real), ((1 - x) / x,))
 
 ChainRulesCore.@scalar_rule(logaddexp(x::Real, y::Real), (exp(x - Ω), exp(y - Ω)))
 ChainRulesCore.@scalar_rule(
