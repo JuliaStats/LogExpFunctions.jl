@@ -292,7 +292,15 @@ function logmxp1(x::Float64)
 end
 
 # Naive fallback
-logmxp1(x::Real) = (log(x) + one(x)) - x
+function logmxp1(x::Real)
+    one_x = one(x)
+    if 2 * x < one_x
+        # for small values of `x` the other branch returns non-finite values
+        return (log(x) + one_x) - x
+    else
+        return log1pmx(x - one_x)
+    end
+end
 
 # The kernel of log1pmx
 # Accuracy within ~2ulps for -0.227 < x < 0.315
