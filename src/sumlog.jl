@@ -12,7 +12,7 @@ allowing us to write
 ```math
 \\sum_j \\log{x_j} = \\log(\\prod_j a_j) + \\log{2} \\sum_j b_j
 ```
-Since `log(2)` is constant, `sumlog` only requires a single `log` evaluation.
+Since ``\\log{2}`` is constant, `sumlog` only requires a single `log` evaluation.
 """
 function sumlog(x::AbstractArray{T}) where {T} 
     sig = one(T) 
