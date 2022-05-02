@@ -22,7 +22,7 @@ function sumlog(x::AbstractArray{T}) where {T}
         sig *= significand(xj)
         ex += exponent(xj) 
 
-        # Significands are in the rang [1,2), so multiplication will eventually overflow
+        # Significands are in the range [1,2), so multiplication will eventually overflow
         if sig > bound
             (a, b) = (significand(sig), exponent(sig))
             sig = a
