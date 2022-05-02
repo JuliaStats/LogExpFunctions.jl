@@ -5,14 +5,16 @@ $(SIGNATURES)
 
 Compute `sum(log.(X))` with a single `log` evaluation.
 
-This is faster than computing `sum(log.(X))` or even `sum(log, X)`, in particular as `X` increases.
+This is faster than computing `sum(log.(X))` or even `sum(log, X)`, in
+particular as the size of `X` increases.
 
-This works by representing the `j`th element of `X` as ``x_j = a_j  2^b_j``,
+This works by representing the `j`th element of `X` as ``x_j = a_j  2^{b_j}``,
 allowing us to write
 ```math
 \\sum_j \\log{x_j} = \\log(\\prod_j a_j) + \\log{2} \\sum_j b_j
 ```
-Since ``\\log{2}`` is constant, `sumlog` only requires a single `log` evaluation.
+Since ``\\log{2}`` is constant, `sumlog` only requires a single `log`
+evaluation.
 """
 function sumlog(x::AbstractArray{<:Real})
     T = float(eltype(x))
