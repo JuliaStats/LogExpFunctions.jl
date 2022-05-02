@@ -9,9 +9,9 @@ This is faster than computing `sum(log.(X))` or even `sum(log, X)`, in particula
 
 This works by representing the `j`th element of `X` as `xⱼ = aⱼ * 2 ^ bⱼ`,
 allowing us to write
-
-    ∑ⱼ log(xⱼ) = log(∏ⱼ aⱼ) + log(2) * ∑ⱼ bⱼ
-
+```math
+\\sum_j \\log{x_j} = \\log(\\prod_j a_j) + \\log{2} \\sum_j b_j
+```
 Since `log(2)` is constant, `sumlog` only requires a single `log` evaluation.
 """
 function sumlog(x::AbstractArray{T}) where {T} 
