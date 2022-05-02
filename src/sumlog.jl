@@ -21,7 +21,7 @@ function sumlog(x::AbstractArray{<:Real})
     _sumlog(T, x)
 end
 
-function _sumlog(::Type{T}, x::AbstractArray{<:Real}) where {T<:AbstractFloat}
+@inline function _sumlog(::Type{T}, x::AbstractArray{<:Real}) where {T<:AbstractFloat}
     sig = one(T) 
     ex = zero(exponent(sig))
     bound = floatmax(T) / 2 
@@ -41,6 +41,6 @@ function _sumlog(::Type{T}, x::AbstractArray{<:Real}) where {T<:AbstractFloat}
 end
 
 # `T` might be a `Symbolics.Num`, which is not an `AbstractFloat`
-_sumlog(::Type{T}, x::AbstractArray{<:Real}) where {T} = sum(log, x)
+@inline _sumlog(::Type{T}, x::AbstractArray{<:Real}) where {T} = sum(log, x)
 
 sumlog(x) = sum(log, x)
