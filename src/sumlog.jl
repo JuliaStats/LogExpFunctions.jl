@@ -18,9 +18,10 @@ evaluation.
 """
 function sumlog(x::AbstractArray{<:Real})
     T = float(eltype(x))
+    _sumlog(T, x)
+end
 
-    # `T` might be a `Symbolics.Num`, which is not an `AbstractFloat`
-    T isa AbstractFloat || return sum(log, x)
+function _sumlog(::Type{T}, x::AbstractArray{<:Real}) where {T<:AbstractFloat}
     sig = one(T) 
     ex = zero(exponent(sig))
     bound = floatmax(T) / 2 
@@ -38,5 +39,8 @@ function sumlog(x::AbstractArray{<:Real})
     end
     log(sig) + logtwo * ex
 end
+
+# `T` might be a `Symbolics.Num`, which is not an `AbstractFloat`
+_sumlog(::Type{T}, x::AbstractArray{<:Real}) where {T} = sum(log, x)
 
 sumlog(x) = sum(log, x)
