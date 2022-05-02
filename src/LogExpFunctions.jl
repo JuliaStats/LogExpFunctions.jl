@@ -11,12 +11,13 @@ import LinearAlgebra
 
 export xlogx, xlogy, xlog1py, xexpx, xexpy, logistic, logit, log1psq, log1pexp, log1mexp, log2mexp, logexpm1,
     softplus, invsoftplus, log1pmx, logmxp1, logaddexp, logsubexp, logsumexp, logsumexp!, softmax,
-    softmax!, logcosh
+    softmax!, logcosh, sumlog
 
 include("basicfuns.jl")
 include("logsumexp.jl")
 include("chainrules.jl")
 include("inverse.jl")
 include("with_logabsdet_jacobian.jl")
+include("sumlog.jl")
 
 end # module
