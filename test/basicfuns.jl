@@ -177,12 +177,28 @@ end
     @test iszero(log1pmx(0.0))
     @test log1pmx(1.0) ≈ log(2.0) - 1.0
     @test log1pmx(2.0) ≈ log(3.0) - 2.0
+
+    @test iszero(log1pmx(0f0))
+    @test log1pmx(1f0) ≈ log(2f0) - 1f0
+    @test log1pmx(2f0) ≈ log(3f0) - 2f0
+
+    for x in -0.5:0.1:10
+        @test log1pmx(Float32(x)) ≈ Float32(log1pmx(x))
+    end
 end
 
 @testset "logmxp1" begin
     @test iszero(logmxp1(1.0))
     @test logmxp1(2.0) ≈ log(2.0) - 1.0
     @test logmxp1(3.0) ≈ log(3.0) - 2.0
+
+    @test iszero(logmxp1(1f0))
+    @test logmxp1(2f0) ≈ log(2f0) - 1f0
+    @test logmxp1(3f0) ≈ log(3f0) - 2f0
+
+    for x in 0.1:0.1:10
+        @test logmxp1(Float32(x)) ≈ Float32(logmxp1(x))
+    end
 end
 
 @testset "logsumexp" begin
