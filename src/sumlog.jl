@@ -7,7 +7,7 @@ Compute `sum(log.(X))` with a single `log` evaluation.
 
 This is faster than computing `sum(log.(X))` or even `sum(log, X)`, in particular as `X` increases.
 
-This works by representing the `j`th element of `X` as `xⱼ = aⱼ * 2 ^ bⱼ`,
+This works by representing the `j`th element of `X` as ``x_j = a_j  2^b_j``,
 allowing us to write
 ```math
 \\sum_j \\log{x_j} = \\log(\\prod_j a_j) + \\log{2} \\sum_j b_j
