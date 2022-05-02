@@ -14,7 +14,7 @@ allowing us to write
 ```
 Since ``\\log{2}`` is constant, `sumlog` only requires a single `log` evaluation.
 """
-function sumlog(x::AbstractArray{T}) where {T} 
+function sumlog(x::AbstractArray{T}) where {T<:AbstractFloat} 
     sig = one(T) 
     ex = zero(exponent(one(T)))
     bound = floatmax(T) / 2 
@@ -31,3 +31,5 @@ function sumlog(x::AbstractArray{T}) where {T}
     end
     log(sig) + logtwo * ex
 end
+
+sumlog(x) = sum(log, x)
