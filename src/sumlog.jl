@@ -14,13 +14,18 @@ allowing us to write
 ```
 Since ``\\log{2}`` is constant, `sumlog` only requires a single `log` evaluation.
 """
-function sumlog(x::AbstractArray{T}) where {T<:AbstractFloat} 
+function sumlog(x::AbstractArray{<:Real})
+    T = float(eltype(x))
+
+    # `T` might be a `Symbolics.Num`, which is not an `AbstractFloat`
+    T isa AbstractFloat || return sum(log, x)
     sig = one(T) 
-    ex = zero(exponent(one(T)))
+    ex = zero(exponent(sig))
     bound = floatmax(T) / 2 
-    for xj in x 
-        sig *= significand(xj)
-        ex += exponent(xj) 
+    for xj in x
+        float_xj = float(xj)
+        sig *= significand(float_xj)
+        ex += exponent(float_xj) 
 
         # Significands are in the range [1,2), so multiplication will eventually overflow
         if sig > bound
