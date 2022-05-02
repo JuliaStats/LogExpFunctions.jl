@@ -3,12 +3,9 @@ using IrrationalConstants: logtwo
 """
 $(SIGNATURES)
 
-Compute `sum(log.(X))`.
+Compute `sum(log.(X))` with a single `log` evaluation.
 
-`sum(log.(X))` can be evaluated much more quickly as `sum(log, X)`. However,
-this still requires computing `log` for each element of `X`. 
-
-`sumlog(X)` can be faster still, especially an the length of `X` increases.
+This is faster than computing `sum(log.(X))` or even `sum(log, X)`, in particular as `X` increases.
 
 This works by representing the `j`th element of `X` as `xⱼ = aⱼ * 2 ^ bⱼ`,
 allowing us to write
