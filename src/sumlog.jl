@@ -20,14 +20,14 @@ function sumlog(x::AbstractArray{<:Real})
 end
 
 @inline function _sumlog(::Type{T}, x::AbstractArray{<:Real}) where {T<:AbstractFloat}
-    sig, ex = mapreduce(_sumlog_op; init=(one(T), zero(exponent(one(T))))) do xj
+    sig, ex = mapreduce(_sumlog_op, x; init=(one(T), zero(exponent(one(T))))) do xj
         float_xj = float(xj)
-        return significand(float_xj), exponent(float_xj) 
+        significand(float_xj), exponent(float_xj) 
     end
     return log(sig) + IrrationalConstants.logtwo * ex
 end
 
-function _sumlog_op((sig1, ex1), (sig2, ex2))
+@inline function _sumlog_op((sig1, ex1), (sig2, ex2))
     sig = sig1 * sig2
     ex = ex1 + ex2
     # Significands are in the range [1,2), so multiplication will eventually overflow
@@ -37,10 +37,8 @@ function _sumlog_op((sig1, ex1), (sig2, ex2))
     end
     return sig, ex
 end
-    log(sig) + IrrationalConstants.logtwo * ex
-end
 
 # `float(T)` is not always `isa AbstractFloat`, e.g. dual numbers or symbolics
-@inline _sumlog(::Type{T}, x::AbstractArray{<:Real}) where {T} = sum(log, x)
+@inline _sumlog(::Type{T}, x) where {T} = sum(log, x)
 
 sumlog(x) = sum(log, x)
