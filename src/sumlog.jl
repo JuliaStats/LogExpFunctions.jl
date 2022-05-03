@@ -38,7 +38,7 @@ end
     log(sig) + IrrationalConstants.logtwo * ex
 end
 
-# `T` might be a `Symbolics.Num`, which is not an `AbstractFloat`
+# `float(T)` is not always `isa AbstractFloat`, e.g. dual numbers or symbolics
 @inline _sumlog(::Type{T}, x::AbstractArray{<:Real}) where {T} = sum(log, x)
 
 sumlog(x) = sum(log, x)
