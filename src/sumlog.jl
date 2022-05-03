@@ -1,5 +1,3 @@
-using IrrationalConstants: logtwo
-
 """
 $(SIGNATURES)
 
@@ -37,7 +35,7 @@ end
             ex += b
         end
     end
-    log(sig) + logtwo * ex
+    log(sig) + IrrationalConstants.logtwo * ex
 end
 
 # `T` might be a `Symbolics.Num`, which is not an `AbstractFloat`
