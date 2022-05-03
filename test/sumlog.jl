@@ -10,6 +10,7 @@
             @test (@inferred sumlog(tup)) ≈ sum(log, tup)
 
             gen = (sqrt(a) for a in y)
+            # `eltype` of a `Base.Generator` returns `Any`
             @test_broken (@inferred sumlog(gen)) ≈ sum(log, gen)
 
             nt = NamedTuple{tuple(Symbol.(1:100)...)}(tup)
