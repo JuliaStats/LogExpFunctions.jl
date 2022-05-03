@@ -14,12 +14,12 @@ allowing us to write
 Since ``\\log{2}`` is constant, `sumlog` only requires a single `log`
 evaluation.
 """
-function sumlog(x::AbstractArray{<:Real})
+function sumlog(x)
     T = float(eltype(x))
-    _sumlog(T, x)
+    _sumlog(T, values(x))
 end
 
-@inline function _sumlog(::Type{T}, x::AbstractArray{<:Real}) where {T<:AbstractFloat}
+@inline function _sumlog(::Type{T}, x) where {T<:AbstractFloat}
     sig, ex = mapreduce(_sumlog_op, x; init=(one(T), zero(exponent(one(T))))) do xj
         float_xj = float(xj)
         significand(float_xj), exponent(float_xj) 
@@ -40,5 +40,3 @@ end
 
 # `float(T)` is not always `isa AbstractFloat`, e.g. dual numbers or symbolics
 @inline _sumlog(::Type{T}, x) where {T} = sum(log, x)
-
-sumlog(x) = sum(log, x)
