@@ -20,21 +20,23 @@ function sumlog(x::AbstractArray{<:Real})
 end
 
 @inline function _sumlog(::Type{T}, x::AbstractArray{<:Real}) where {T<:AbstractFloat}
-    sig = one(T) 
-    ex = zero(exponent(sig))
-    bound = floatmax(T) / 2 
-    for xj in x
+    sig, ex = mapreduce(_sumlog_op; init=(one(T), zero(exponent(one(T))))) do xj
         float_xj = float(xj)
-        sig *= significand(float_xj)
-        ex += exponent(float_xj) 
-
-        # Significands are in the range [1,2), so multiplication will eventually overflow
-        if sig > bound
-            (a, b) = (significand(sig), exponent(sig))
-            sig = a
-            ex += b
-        end
+        return significand(float_xj), exponent(float_xj) 
     end
+    return log(sig) + IrrationalConstants.logtwo * ex
+end
+
+function _sumlog_op((sig1, ex1), (sig2, ex2))
+    sig = sig1 * sig2
+    ex = ex1 + ex2
+    # Significands are in the range [1,2), so multiplication will eventually overflow
+    if sig > floatmax(typeof(sig)) / 2
+        ex += exponent(sig)
+        sig = significand(sig)
+    end
+    return sig, ex
+end
     log(sig) + IrrationalConstants.logtwo * ex
 end
 
