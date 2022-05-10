@@ -26,13 +26,14 @@ end
 
 @inline function _logabsprod_op((sig1, ex1), (sig2, ex2))
     sig = sig1 * sig2
-    # sig = ifelse(sig2<0, sig2, sig1 * sig2)
     ex = ex1 + ex2
-    # Significands are in the range [1,2), so multiplication will eventually overflow
-    if sig > floatmax(typeof(sig)) / 2
-        (new_sig, Δex) = frexp(sig)
+    
+    # The significand from `frexp` has magnitude in the range [0.5, 1), 
+    # so multiplication will eventually underflow
+    may_underflow(sig::T) where {T} = sig < sqrt(floatmin(T))
+    if may_underflow(sig)
+        (sig, Δex) = frexp(sig)
         ex += Δex
-        sig = new_sig
     end
     return sig, ex
 end
