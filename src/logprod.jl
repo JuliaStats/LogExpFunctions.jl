@@ -10,7 +10,11 @@ allowing us to write
 \\log \\prod_k x_j = \\log(\\prod_j a_j) + \\log{2} \\sum_j b_j.
 ```
 """
-logprod(x) = first(logabsprod(x))
+function logprod(x)
+    y, s = logabsprod(x)
+    y isa Real && s < 0 && throw(DomainError(x, "`prod(x)` must be non-negative"))
+    return y
+end
 
 export logabsprod
 
