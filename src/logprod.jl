@@ -1,8 +1,7 @@
 """
     logprod(X::AbstractArray{T}; dims)
 
-Compute `sum(log.(X))` with a single `log` evaluation,
-provided `float(T) <: AbstractFloat`.
+Compute `log(prod(x))` efficiently.
 
 This is faster than computing `sum(log, X)`, especially for large `X`.
 It works by representing the `j`th element of `x` as ``x_j = a_j  2^{b_j}`,
