@@ -64,7 +64,6 @@ function logabsprod(x)
     end
     x1 = float(iter[1])
     x1 isa AbstractFloat || return sum(log, x)
-    x1 < 0 && Base.Math.throw_complex_domainerror(:log, x1)
     sig, ex = significand(x1), _exponent(x1)
     nonfloat = zero(x1)
     iter = iterate(x, iter[2])
