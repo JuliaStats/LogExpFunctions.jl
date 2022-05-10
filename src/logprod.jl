@@ -55,8 +55,8 @@ Does not accept a `dims` keyword.
 logprod(f, x) = logprod(Iterators.map(f, x))
 logprod(f, x, ys...) = logprod(f(xy...) for xy in zip(x, ys...))
 
-# Iterator version, uses the same `_logprod_op`, should be the same speed.
-function logprod(x)
+# Iterator version, uses the same `_logabsprod_op`, should be the same speed.
+function logabsprod(x)
     iter = iterate(x)
     if isnothing(iter)
         T = Base._return_type(first, Tuple{typeof(x)})
