@@ -20,7 +20,7 @@ function logabsprod(x::AbstractArray{T}) where {T}
         float_xj = float(xj)
         frexp(float_xj)
     end
-    sgn = signbit(sig) ? one(T) : -one(T)
+    sgn = signbit(sig) ? -one(T) : one(T)
     return (log(abs(sig)) + IrrationalConstants.logtwo * T(ex), sgn)
 end
 
