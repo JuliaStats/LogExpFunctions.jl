@@ -59,8 +59,8 @@ logprod(f, x, ys...) = logprod(f(xy...) for xy in zip(x, ys...))
 function logabsprod(x)
     iter = iterate(x)
     if isnothing(iter)
-        T = Base._return_type(first, Tuple{typeof(x)})
-        return T <: Number ? zero(float(T)) : 0.0
+        y = prod(x)
+        return log(abs(y)), sign(y)
     end
     x1 = float(iter[1])
     x1 isa AbstractFloat || return sum(log, x)
