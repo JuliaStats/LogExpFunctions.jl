@@ -11,7 +11,7 @@ import LinearAlgebra
 
 export xlogx, xlogy, xlog1py, xexpx, xexpy, logistic, logit, log1psq, log1pexp, log1mexp, log2mexp, logexpm1,
     softplus, invsoftplus, log1pmx, logmxp1, logaddexp, logsubexp, logsumexp, logsumexp!, softmax,
-    softmax!, logcosh, sumlog
+    softmax!, logcosh, logprod, logabsprod
 
 include("basicfuns.jl")
 include("logsumexp.jl")
