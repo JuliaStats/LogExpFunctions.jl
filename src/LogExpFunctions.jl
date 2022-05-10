@@ -18,6 +18,7 @@ include("logsumexp.jl")
 include("chainrules.jl")
 include("inverse.jl")
 include("with_logabsdet_jacobian.jl")
-include("sumlog.jl")
+# include("sumlog.jl")
+include("logprod.jl")
 
 end # module
