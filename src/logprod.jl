@@ -7,7 +7,7 @@ This is faster than computing `sum(log, X)`, especially for large `X`.
 It works by representing the `j`th element of `x` as ``x_j = a_j  2^{b_j}`,
 allowing us to write
 ```math
-\\sum_j \\log{x_j} = \\log(\\prod_j a_j) + \\log{2} \\sum_j b_j
+\\log \\prod_k x_j = \\log(\\prod_j a_j) + \\log{2} \\sum_j b_j.
 ```
 """
 logprod(x) = first(logabsprod(x))
