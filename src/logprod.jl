@@ -29,9 +29,8 @@ end
     ex = ex1 + ex2
     # Significands are in the range [1,2), so multiplication will eventually overflow
     if sig > floatmax(typeof(sig)) / 2
-        (new_sig, Δex) = frexp(sig)
+        sig, Δex = frexp(sig)
         ex += Δex
-        sig = new_sig
     end
     return sig, ex
 end
