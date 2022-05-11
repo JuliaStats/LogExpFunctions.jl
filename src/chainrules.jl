@@ -1,42 +1,97 @@
-ChainRulesCore.@scalar_rule(xlogx(x::Real), (1 + log(x),))
-ChainRulesCore.@scalar_rule(xlogy(x::Real, y::Real), (log(y), x / y,))
-ChainRulesCore.@scalar_rule(xlog1py(x::Real, y::Real), (log1p(y), x / (1 + y),))
+function _Ω_∂_xlogx(x::Real)
+    logx = log(x)
+    y = x * logx
+    Ω = iszero(x) ? zero(y) : y
+    ∂x = 1 + logx
+    return Ω, ∂x
+end
+function ChainRulesCore.frule((_, Δx), ::typeof(xlogx), x::Real)
+    Ω, ∂x = _Ω_∂_xlogx(x)
+    ΔΩ = ∂x * Δx
+    return Ω, ΔΩ
+end
+function ChainRulesCore.rrule(::typeof(xlogx), x::Real)
+    Ω, ∂x = _Ω_∂_xlogx(x)
+    xlogx_pullback(ΔΩ) = (ChainRulesCore.NoTangent(), ∂x * ΔΩ)
+    return Ω, xlogx_pullback
+end
 
-function ChainRulesCore.frule((_, Δx), ::typeof(xexpx), x::Real)
+function _Ω_∂_xlogy(x::Real, y::Real)
+    logy = log(y)
+    z = x * logy
+    Ω = iszero(x) && !isnan(y) ? zero(z) : z
+    ∂x = logy
+    ∂y = x / y
+    return Ω, ∂x, ∂y
+end
+function ChainRulesCore.frule((_, Δx, Δy), ::typeof(xlogy), x::Real, y::Real)
+    Ω, ∂x, ∂y = _Ω_∂_xlogy(x, y)
+    ΔΩ = muladd(∂x, Δx, ∂y * Δy)
+    return Ω, ΔΩ
+end
+function ChainRulesCore.rrule(::typeof(xlogy), x::Real, y::Real)
+    Ω, ∂x, ∂y = _Ω_∂_xlogy(x, y)
+    xlogy_pullback(ΔΩ) = (ChainRulesCore.NoTangent(), ∂x * ΔΩ, ∂y * ΔΩ)
+    return Ω, xlogy_pullback
+end
+
+function _Ω_∂_xlog1py(x::Real, y::Real)
+    log1py = log1p(y)
+    z = x * log1py
+    Ω = iszero(x) && !isnan(y) ? zero(z) : z
+    ∂x = log1py
+    ∂y = x / (1 + y)
+    return Ω, ∂x, ∂y
+end
+function ChainRulesCore.frule((_, Δx, Δy), ::typeof(xlog1py), x::Real, y::Real)
+    Ω, ∂x, ∂y = _Ω_∂_xlog1py(x, y)
+    ΔΩ = muladd(∂x, Δx, ∂y * Δy)
+    return Ω, ΔΩ
+end
+function ChainRulesCore.rrule(::typeof(xlog1py), x::Real, y::Real)
+    Ω, ∂x, ∂y = _Ω_∂_xlog1py(x, y)
+    xlog1py_pullback(ΔΩ) = (ChainRulesCore.NoTangent(), ∂x * ΔΩ, ∂y * ΔΩ)
+    return Ω, xlog1py_pullback
+end
+
+function _Ω_∂_xexpx(x::Real)
     expx = exp(x)
     if iszero(expx)
         Ω = expx
-        ΔΩ = expx * Δx
+        ∂x = expx
     else
         Ω = x * expx
-        ΔΩ = (1 + x) * expx * Δx
+        ∂x = (1 + x) * expx
     end
+    return Ω, ∂x
+end
+function ChainRulesCore.frule((_, Δx), ::typeof(xexpx), x::Real)
+    Ω, ∂x = _Ω_∂_xexpx(x)
+    ΔΩ = ∂x * Δx
     return Ω, ΔΩ
 end
-
 function ChainRulesCore.rrule(::typeof(xexpx), x::Real)
-    expx = exp(x)
-    Ω = iszero(expx) ? expx : x * expx
-    function xexpx_pullback(ΔΩ)
-        Δx = iszero(expx) ? expx * ΔΩ : (1 + x) * expx * ΔΩ
-        return (ChainRulesCore.NoTangent(), Δx)
-    end
+    Ω, ∂x = _Ω_∂_xexpx(x)
+    xexpx_pullback(ΔΩ) = (ChainRulesCore.NoTangent(), ∂x * ΔΩ)
     return Ω, xexpx_pullback
 end
 
-function ChainRulesCore.frule((_, Δx, Δy), ::typeof(xexpy), x::Real, y::Real)
+function _Ω_∂_xexpy(x::Real, y::Real)
     expy = exp(y)
     result = x * expy
     Ω = iszero(expy) && !isnan(x) ? zero(result) : result
-    ΔΩ = expy * Δx + Ω * Δy
+    ∂x = expy
+    ∂y = Ω
+    return Ω, ∂x, ∂y
+end
+function ChainRulesCore.frule((_, Δx, Δy), ::typeof(xexpy), x::Real, y::Real)
+    Ω, ∂x, ∂y = _Ω_∂_xexpy(x, y)
+    ΔΩ = muladd(∂x, Δx, ∂y * Δy)
     return Ω, ΔΩ
 end
-
 function ChainRulesCore.rrule(::typeof(xexpy), x::Real, y::Real)
-    expy = exp(y)
-    result = x * expy
-    Ω = iszero(expy) && !isnan(x) ? zero(result) : result
-    xexpy_pullback(ΔΩ) = (ChainRulesCore.NoTangent(), ΔΩ * expy, ΔΩ * Ω)
+    Ω, ∂x, ∂y = _Ω_∂_xexpy(x, y)
+    xexpy_pullback(ΔΩ) = (ChainRulesCore.NoTangent(), ∂x * ΔΩ, ∂y * ΔΩ)
     return Ω, xexpy_pullback
 end
 
