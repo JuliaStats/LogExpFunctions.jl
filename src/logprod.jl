@@ -63,7 +63,10 @@ function logabsprod(x)
         return log(abs(y)), sign(y)
     end
     x1 = float(iter[1])
-    x1 isa AbstractFloat || return sum(log, x)
+    if !(x1 isa AbstractFloat)
+        y = prod(x)
+        return log(abs(y)), sign(y)
+    end
     sig, ex = significand(x1), _exponent(x1)
     nonfloat = zero(x1)
     iter = iterate(x, iter[2])
