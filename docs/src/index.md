@@ -26,6 +26,8 @@ logaddexp
 logsubexp
 logsumexp
 logsumexp!
+logprod
+logabsprod
 softmax!
 softmax
 ```
