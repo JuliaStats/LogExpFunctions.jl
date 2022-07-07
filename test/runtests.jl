@@ -2,6 +2,7 @@ using LogExpFunctions
 using ChainRulesTestUtils
 using ChainRulesCore
 using ChangesOfVariables
+using FiniteDifferences
 using InverseFunctions
 using OffsetArrays
 
