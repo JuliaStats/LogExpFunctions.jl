@@ -7,10 +7,16 @@
         test_frule(xlogy, x, y)
         test_rrule(xlogy, x, y)
 
+        test_frule(xlogy, x, 0.0; fdm = forward_fdm(5, 1), nans = true)
+        test_rrule(xlogy, x, 0.0; fdm = forward_fdm(5, 1), nans = true)
+
         for z in (-y, y)
             test_frule(xlog1py, x, z)
             test_rrule(xlog1py, x, z)
         end
+
+        test_frule(xlog1py, x, -1.0; fdm = forward_fdm(5, 1), nans = true)
+        test_rrule(xlog1py, x, -1.0; fdm = forward_fdm(5, 1), nans = true)
     end
 
     @testset "xexpx" begin
