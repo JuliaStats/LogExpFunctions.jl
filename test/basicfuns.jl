@@ -410,3 +410,15 @@ end
     @test axes(s, 1) == OffsetArrays.IdOffsetRange(-2:0)
     @test collect(s) ≈ softmax(1:3)
 end
+
+@testset "cloglog and cexpexp" begin
+    @test cloglog(0) == -Inf
+    @test cloglog(1) == Inf
+    @test cloglog((ℯ - 1) / ℯ) == 0
+    @test cloglog(0.5) == -0.366512920581664327012439158232669469454263447837105263053
+
+    @test cexpexp(Inf) == 1.0
+    @test cexpexp(-Inf) == 0.0
+    @test cexpexp(0) == (ℯ - 1) / ℯ
+    @test cexpexp(-0.366512920581664327012439158232669469454263447837105263053) == 0.5
+end
