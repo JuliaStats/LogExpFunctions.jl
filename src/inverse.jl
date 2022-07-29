@@ -7,3 +7,6 @@ InverseFunctions.inverse(::typeof(log2mexp)) = log2mexp
 
 InverseFunctions.inverse(::typeof(logit)) = logistic
 InverseFunctions.inverse(::typeof(logistic)) = logit
+
+InverseFunctions.inverse(::typeof(cloglog)) = cexpexp
+InverseFunctions.inverse(::typeof(cexpexp)) = cloglog

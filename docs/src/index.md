@@ -28,4 +28,6 @@ logsumexp
 logsumexp!
 softmax!
 softmax
+cloglog
+cexpexp
 ```

@@ -8,4 +8,7 @@
 
     InverseFunctions.test_inverse(logistic, randn())
     InverseFunctions.test_inverse(logit, rand())
+
+    InverseFunctions.test_inverse(cloglog, rand())
+    InverseFunctions.test_inverse(cexpexp, rand())
 end

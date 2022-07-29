@@ -410,3 +410,27 @@ end
     @test axes(s, 1) == OffsetArrays.IdOffsetRange(-2:0)
     @test collect(s) ≈ softmax(1:3)
 end
+
+@testset "cloglog and cexpexp" begin
+    cloglog_big(x::T) where {T} = T(log(-log(1 - BigFloat(x))))
+    cexpexp_big(x::T) where {T} = 1 - exp(-exp(BigFloat(x)))
+
+    for x in 0.1:0.1:0.9
+        @test cloglog(x) ≈ cloglog_big(x)
+        @test cexpexp(x) ≈ cexpexp_big(x)
+    end
+    for _ in 1:10
+        randf = rand(Float64)
+        @test cloglog(randf) ≈ cloglog_big(randf)
+        randi = rand(Int)
+        @test cexpexp(randi) ≈ cexpexp_big(randi)
+    end
+
+    @test cloglog(0) == -Inf
+    @test cloglog(1) == Inf
+    @test cloglog((ℯ - 1) / ℯ) == 0
+
+    @test cexpexp(Inf) == 1.0
+    @test cexpexp(-Inf) == 0.0
+    @test cexpexp(0) == (ℯ - 1) / ℯ
+end
