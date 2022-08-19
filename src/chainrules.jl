@@ -25,9 +25,9 @@ function _Ω_∂_xlogy(x::Real, y::Real)
         ∂y = zero(w)
     else
         Ω = z
-        ∂y = iszero(y) ? oftype(w, NaN) : w
+        ∂y = w
     end
-    ∂x = iszero(y) ? oftype(logy, NaN) : logy
+    ∂x = logy
     return Ω, ∂x, ∂y
 end
 function ChainRulesCore.frule((_, Δx, Δy), ::typeof(xlogy), x::Real, y::Real)
@@ -51,9 +51,9 @@ function _Ω_∂_xlog1py(x::Real, y::Real)
         ∂y = zero(z)
     else
         Ω = z
-        ∂y = iszero(yp1) ? oftype(w, NaN) : w
+        ∂y = w
     end
-    ∂x = iszero(yp1) ? oftype(log1py, NaN) : log1py
+    ∂x = log1py
     return Ω, ∂x, ∂y
 end
 function ChainRulesCore.frule((_, Δx, Δy), ::typeof(xlog1py), x::Real, y::Real)
