@@ -407,3 +407,17 @@ function _softmax!(r, x, dims)
     end
     return r
 end
+
+"""
+$(SIGNATURES)
+
+Compute the complementary log-log, `log(-log(1 - x))`.
+"""
+cloglog(x) = log(-log1p(-x))
+
+"""
+$(SIGNATURES)
+
+Compute the complementary double exponential, `1 - exp(-exp(x))`.
+"""
+cexpexp(x) = -expm1(-exp(x))

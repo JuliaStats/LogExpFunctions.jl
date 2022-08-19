@@ -118,4 +118,8 @@
             test_rrule(softmax, x; fkwargs=(dims=dims,))
         end
     end
+
+    test_scalar(cloglog, rand())
+
+    test_scalar(cexpexp, rand())
 end

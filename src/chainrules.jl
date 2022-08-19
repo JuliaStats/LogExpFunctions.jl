@@ -176,3 +176,6 @@ function ChainRulesCore.rrule(::typeof(softmax), x::AbstractArray{<:Real}; dims=
     end
     return Ω, softmax_pullback
 end
+
+ChainRulesCore.@scalar_rule(cloglog(x), (-inv((1 - x) * log1p(-x)),))
+ChainRulesCore.@scalar_rule(cexpexp(x), (-xexpx(-exp(x)),))
