@@ -8,6 +8,7 @@
 
     test_frule(xlog1py, 0.0, -1.0; fdm = forward_fdm(5, 1), nans = true)
     test_rrule(xlog1py, 0.0, -1.0; fdm = forward_fdm(5, 1), nans = true)
+
     for x in (-x, 0.0, x)
         y = rand()
         test_frule(xlogy, x, y)
