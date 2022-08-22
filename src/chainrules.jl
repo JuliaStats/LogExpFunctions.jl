@@ -32,11 +32,7 @@ function _Ω_∂_xlogy(x::Real, y::Real)
 end
 function ChainRulesCore.frule((_, Δx, Δy), ::typeof(xlogy), x::Real, y::Real)
     Ω, ∂x, ∂y = _Ω_∂_xlogy(x, y)
-    if iszero(Δx)
-        ΔΩ = ∂y * Δy
-    else
-        ΔΩ = muladd(∂x, Δx, ∂y * Δy)
-    end
+    ΔΩ = muladd(∂x, Δx, ∂y * Δy)
     return Ω, ΔΩ
 end
 function ChainRulesCore.rrule(::typeof(xlogy), x::Real, y::Real)
@@ -61,7 +57,11 @@ function _Ω_∂_xlog1py(x::Real, y::Real)
 end
 function ChainRulesCore.frule((_, Δx, Δy), ::typeof(xlog1py), x::Real, y::Real)
     Ω, ∂x, ∂y = _Ω_∂_xlog1py(x, y)
-    ΔΩ = muladd(∂x, Δx, ∂y * Δy)
+    if iszero(Δx)
+        ΔΩ = ∂y * Δy
+    else
+        ΔΩ = muladd(∂x, Δx, ∂y * Δy)
+    end
     return Ω, ΔΩ
 end
 function ChainRulesCore.rrule(::typeof(xlog1py), x::Real, y::Real)
