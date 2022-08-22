@@ -3,11 +3,11 @@
     test_frule(xlogx, x)
     test_rrule(xlogx, x)
 
-# Test `iszero(x)` branches
+    # Test `iszero(x)` branches
     test_frule(xlogy, 0.0, 1.0; fdm = forward_fdm(5, 1), nans = true)
     test_rrule(xlogy, 0.0, 1.0; fdm = forward_fdm(5, 1), nans = true)
-    test_frule(xlog1py, 0.0, -1.0; fdm = forward_fdm(5, 1), nans = true)
-    test_rrule(xlog1py, 0.0, -1.0; fdm = forward_fdm(5, 1), nans = true)
+    @test iszero(last(frule((0., 0., 1.), xlog1py, 0.0, -1.0)))
+    @test iszero(last(last(rrule(xlog1py, 0.0, -1.0))(1.)))
 
     for x in (-x, 0.0, x)
         y = rand()
