@@ -44,8 +44,7 @@ end
 function _Ω_∂_xlog1py(x::Real, y::Real)
     log1py = log1p(y)
     z = x * log1py
-    yp1 = 1 + y
-    w = x / yp1
+    w = x / (1 + y)
     if iszero(x) && !isnan(y)
         Ω = zero(z)
         ∂y = zero(z)
