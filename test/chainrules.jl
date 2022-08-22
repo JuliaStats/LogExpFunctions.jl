@@ -3,6 +3,7 @@
     test_frule(xlogx, x)
     test_rrule(xlogx, x)
 
+# Test `iszero(x)` branches
     test_frule(xlogy, 0.0, 1.0; fdm = forward_fdm(5, 1), nans = true)
     test_rrule(xlogy, 0.0, 1.0; fdm = forward_fdm(5, 1), nans = true)
     test_frule(xlog1py, 0.0, -1.0; fdm = forward_fdm(5, 1), nans = true)
