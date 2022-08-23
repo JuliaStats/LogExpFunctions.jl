@@ -19,9 +19,15 @@ end
 function _Ω_∂_xlogy(x::Real, y::Real)
     logy = log(y)
     z = x * logy
-    Ω = iszero(x) && !isnan(y) ? zero(z) : z
+    w = x / y
+    if iszero(x) && !isnan(y)
+        Ω = zero(z)
+        ∂y = zero(w)
+    else
+        Ω = z
+        ∂y = w
+    end
     ∂x = logy
-    ∂y = x / y
     return Ω, ∂x, ∂y
 end
 function ChainRulesCore.frule((_, Δx, Δy), ::typeof(xlogy), x::Real, y::Real)
@@ -38,9 +44,15 @@ end
 function _Ω_∂_xlog1py(x::Real, y::Real)
     log1py = log1p(y)
     z = x * log1py
-    Ω = iszero(x) && !isnan(y) ? zero(z) : z
+    w = x / (1 + y)
+    if iszero(x) && !isnan(y)
+        Ω = zero(z)
+        ∂y = zero(w)
+    else
+        Ω = z
+        ∂y = w
+    end
     ∂x = log1py
-    ∂y = x / (1 + y)
     return Ω, ∂x, ∂y
 end
 function ChainRulesCore.frule((_, Δx, Δy), ::typeof(xlog1py), x::Real, y::Real)
