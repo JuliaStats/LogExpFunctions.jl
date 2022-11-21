@@ -342,6 +342,19 @@ end
     expected = logsumexp(xs; dims=2)
     @test logsumexp!(out, xs) ≈ expected
     @test out ≈ expected
+
+    @testset "ForwardDiff" begin
+        # vector with finite numbers
+        x = randn(10)
+        ∇x = unthunk(rrule(logsumexp, x)[2](1)[2])
+        @test ForwardDiff.gradient(logsumexp, x) ≈ ∇x
+
+        # issue #59
+        x = vcat(-Inf, randn(9))
+        ∇x = unthunk(rrule(logsumexp, x)[2](1)[2])
+        @assert all(isfinite, ∇x)
+        @test ForwardDiff.gradient(logsumexp, x) ≈ ∇x
+    end
 end
 
 @testset "softmax" begin
