@@ -3,6 +3,7 @@ using ChainRulesTestUtils
 using ChainRulesCore
 using ChangesOfVariables
 using FiniteDifferences
+using ForwardDiff
 using InverseFunctions
 using OffsetArrays
 
