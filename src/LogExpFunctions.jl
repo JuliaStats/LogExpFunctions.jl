@@ -3,9 +3,6 @@ module LogExpFunctions
 using DocStringExtensions: SIGNATURES
 using Base: Math.@horner
 
-import ChainRulesCore
-import ChangesOfVariables
-import InverseFunctions
 import IrrationalConstants
 import LinearAlgebra
 
@@ -15,8 +12,11 @@ export xlogx, xlogy, xlog1py, xexpx, xexpy, logistic, logit, log1psq, log1pexp, 
 
 include("basicfuns.jl")
 include("logsumexp.jl")
-include("chainrules.jl")
-include("inverse.jl")
-include("with_logabsdet_jacobian.jl")
+
+if !isdefined(Base, :get_extension)
+    include("../ext/ChainRulesCoreExt.jl")
+    include("../ext/ChangesOfVariablesExt.jl")
+    include("../ext/InverseFunctionsExt.jl")
+end
 
 end # module

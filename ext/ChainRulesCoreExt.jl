@@ -1,3 +1,10 @@
+module ChainRulesCoreExt
+
+using LogExpFunctions
+import ChainRulesCore
+
+import LinearAlgebra
+
 function _Ω_∂_xlogx(x::Real)
     logx = log(x)
     y = x * logx
@@ -178,3 +185,5 @@ end
 
 ChainRulesCore.@scalar_rule(cloglog(x), (-inv((1 - x) * log1p(-x)),))
 ChainRulesCore.@scalar_rule(cexpexp(x), (-xexpx(-exp(x)),))
+
+end # module
