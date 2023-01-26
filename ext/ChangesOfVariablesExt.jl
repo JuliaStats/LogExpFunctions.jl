@@ -1,3 +1,9 @@
+module ChangesOfVariablesExt
+
+using LogExpFunctions
+import ChangesOfVariables
+import IrrationalConstants
+
 function ChangesOfVariables.with_logabsdet_jacobian(::typeof(log1pexp), x::Real)
     y = log1pexp(x)
     return y, x - y
@@ -35,3 +41,5 @@ function ChangesOfVariables.with_logabsdet_jacobian(::typeof(logcosh), x::Real)
     y = abs_x + z - IrrationalConstants.logtwo
     return y, log1mexp(a) - z
 end
+
+end # module

@@ -1,3 +1,8 @@
+module InverseFunctionsExt
+
+using LogExpFunctions
+import InverseFunctions
+
 InverseFunctions.inverse(::typeof(log1pexp)) = logexpm1
 InverseFunctions.inverse(::typeof(logexpm1)) = log1pexp
 
@@ -10,3 +15,5 @@ InverseFunctions.inverse(::typeof(logistic)) = logit
 
 InverseFunctions.inverse(::typeof(cloglog)) = cexpexp
 InverseFunctions.inverse(::typeof(cexpexp)) = cloglog
+
+end # module
