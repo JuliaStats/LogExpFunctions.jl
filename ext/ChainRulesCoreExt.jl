@@ -3,7 +3,7 @@ module ChainRulesCoreExt
 using LogExpFunctions
 import ChainRulesCore
 
-import LinearAlgebra
+import LogExpFunctions.LinearAlgebra
 
 function _Ω_∂_xlogx(x::Real)
     logx = log(x)
