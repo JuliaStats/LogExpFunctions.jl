@@ -2,7 +2,7 @@ module ChangesOfVariablesExt
 
 using LogExpFunctions
 import ChangesOfVariables
-import IrrationalConstants
+import LogExpFunctions.IrrationalConstants
 
 function ChangesOfVariables.with_logabsdet_jacobian(::typeof(log1pexp), x::Real)
     y = log1pexp(x)
