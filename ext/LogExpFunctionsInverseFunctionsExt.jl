@@ -1,4 +1,4 @@
-module InverseFunctionsExt
+module LogExpFunctionsInverseFunctionsExt
 
 using LogExpFunctions
 import InverseFunctions

@@ -1,4 +1,4 @@
-module ChangesOfVariablesExt
+module LogExpFunctionsChangesOfVariablesExt
 
 using LogExpFunctions
 import ChangesOfVariables

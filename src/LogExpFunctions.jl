@@ -14,9 +14,9 @@ include("basicfuns.jl")
 include("logsumexp.jl")
 
 if !isdefined(Base, :get_extension)
-    include("../ext/ChainRulesCoreExt.jl")
-    include("../ext/ChangesOfVariablesExt.jl")
-    include("../ext/InverseFunctionsExt.jl")
+    include("../ext/LogExpFunctionsChainRulesCoreExt.jl")
+    include("../ext/LogExpFunctionsChangesOfVariablesExt.jl")
+    include("../ext/LogExpFunctionsInverseFunctionsExt.jl")
 end
 
 end # module
