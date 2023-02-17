@@ -1,4 +1,4 @@
-module ChainRulesCoreExt
+module LogExpFunctionsChainRulesCoreExt
 
 using LogExpFunctions
 import ChainRulesCore
