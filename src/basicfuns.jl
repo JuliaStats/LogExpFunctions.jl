@@ -137,6 +137,18 @@ end
 """
 $(SIGNATURES)
 
+Return `log(abs(sinh(x)))`, carefully evaluated without intermediate calculation of `sinh(x)`.
+
+The implementation ensures `logabssinh(-x) = logabssinh(x)`.
+"""
+function logabssinh(x::Real)
+    abs_x = abs(x)
+    return abs_x + log1mexp(- 2 * abs_x) - IrrationalConstants.logtwo
+end
+
+"""
+$(SIGNATURES)
+
 Return `log(1+x^2)` evaluated carefully for `abs(x)` very small or very large.
 """
 log1psq(x::Real) = log1p(abs2(x))
