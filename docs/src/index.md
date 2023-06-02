@@ -15,6 +15,7 @@ xexpy
 logistic
 logit
 logcosh
+logabssinh
 log1psq
 log1pexp
 log1mexp
