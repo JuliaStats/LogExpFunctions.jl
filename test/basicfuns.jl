@@ -154,23 +154,28 @@ end
 end
 
 @testset "log1mexp" begin
-    @test log1mexp(-1.0)  ≈ log1p(- exp(-1.0))
-    @test log1mexp(-10.0) ≈ log1p(- exp(-10.0))
+    for T in (Float64, Float32, Float16)
+        @test @inferred(log1mexp(-T(1))) isa T
+        @test log1mexp(-T(1))  ≈ log1p(- exp(-T(1)))
+        @test log1mexp(-T(10)) ≈ log1p(- exp(-T(10)))
+    end
 end
 
 @testset "log2mexp" begin
-    @test log2mexp(0.0)  ≈ 0.0
-    @test log2mexp(-1.0) ≈ log(2.0 - exp(-1.0))
+    for T in (Float64, Float32, Float16)
+        @test @inferred(log2mexp(T(0))) isa T
+        @test iszero(log2mexp(T(0)))
+        @test log2mexp(-T(1)) ≈ log(2 - exp(-T(1)))
+    end
 end
 
 @testset "logexpm1" begin
-    @test logexpm1(2.0)            ≈  log(exp(2.0) - 1.0)
-    @test logexpm1(log1pexp(2.0))  ≈  2.0
-    @test logexpm1(log1pexp(-2.0)) ≈ -2.0
-
-    @test logexpm1(2f0)            ≈  log(exp(2f0) - 1f0)
-    @test logexpm1(log1pexp(2f0))  ≈  2f0
-    @test logexpm1(log1pexp(-2f0)) ≈ -2f0
+    for T in (Float64, Float32, Float16)
+        @test @inferred(logexpm1(T(2))) isa T
+        @test logexpm1(T(2))            ≈  log(exp(T(2)) - 1)
+        @test logexpm1(log1pexp(T(2)))  ≈  T(2)
+        @test logexpm1(log1pexp(-T(2))) ≈ -T(2)
+    end
 end
 
 @testset "log1pmx" begin
@@ -428,9 +433,13 @@ end
     cloglog_big(x::T) where {T} = T(log(-log(1 - BigFloat(x))))
     cexpexp_big(x::T) where {T} = 1 - exp(-exp(BigFloat(x)))
 
-    for x in 0.1:0.1:0.9
-        @test cloglog(x) ≈ cloglog_big(x)
-        @test cexpexp(x) ≈ cexpexp_big(x)
+    for T in (Float64, Float32, Float16)
+        @test @inferred(cloglog(T(1//2))) isa T
+        @test @inferred(cexpexp(T(0))) isa T
+        for x in 0.1:0.1:0.9
+            @test cloglog(T(x)) ≈ cloglog_big(T(x))
+            @test cexpexp(T(x)) ≈ cexpexp_big(T(x))
+        end
     end
     for _ in 1:10
         randf = rand(Float64)
