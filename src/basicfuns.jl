@@ -231,7 +231,15 @@ See:
 
 Note: different than Maechler (2012), no negation inside parentheses
 """
-log1mexp(x::Real) = x < IrrationalConstants.loghalf ? log1p(-exp(x)) : log(-expm1(x))
+function log1mexp(x::Real)
+    # Use explicit `oftype(..)` instead of just `loghalf` to avoid CUDA issues:
+    # https://github.com/JuliaStats/LogExpFunctions.jl/issues/73
+    if x < oftype(float(x), IrrationalConstants.loghalf)
+        return log1p(-exp(x))
+    else
+        return log(-expm1(x))
+    end
+end
 
 """
 $(SIGNATURES)
