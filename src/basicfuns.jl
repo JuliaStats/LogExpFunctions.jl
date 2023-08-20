@@ -137,6 +137,18 @@ end
 """
 $(SIGNATURES)
 
+Return `log(abs(sinh(x)))`, carefully evaluated without intermediate calculation of `sinh(x)`.
+
+The implementation ensures `logabssinh(-x) = logabssinh(x)`.
+"""
+function logabssinh(x::Real)
+    abs_x = abs(x)
+    return abs_x + log1mexp(- 2 * abs_x) - IrrationalConstants.logtwo
+end
+
+"""
+$(SIGNATURES)
+
 Return `log(1+x^2)` evaluated carefully for `abs(x)` very small or very large.
 """
 log1psq(x::Real) = log1p(abs2(x))
@@ -219,7 +231,15 @@ See:
 
 Note: different than Maechler (2012), no negation inside parentheses
 """
-log1mexp(x::Real) = x < IrrationalConstants.loghalf ? log1p(-exp(x)) : log(-_expm1(x))
+function log1mexp(x::Real)
+    # Use explicit `oftype(..)` instead of just `loghalf` to avoid CUDA issues:
+    # https://github.com/JuliaStats/LogExpFunctions.jl/issues/73
+    if x < oftype(float(x), IrrationalConstants.loghalf)
+        return log1p(-exp(x))
+    else
+        return log(-_expm1(x))
+    end
+end
 
 """
 $(SIGNATURES)

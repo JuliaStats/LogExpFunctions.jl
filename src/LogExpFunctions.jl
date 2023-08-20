@@ -8,7 +8,7 @@ import LinearAlgebra
 
 export xlogx, xlogy, xlog1py, xexpx, xexpy, logistic, logit, log1psq, log1pexp, log1mexp, log2mexp, logexpm1,
     softplus, invsoftplus, log1pmx, logmxp1, logaddexp, logsubexp, logsumexp, logsumexp!, softmax,
-    softmax!, logcosh, cloglog, cexpexp
+    softmax!, logcosh, logabssinh, cloglog, cexpexp
 
 # expm1(::Float16) is not defined in older Julia versions,
 # hence for better Float16 support we use an internal function instead
@@ -24,9 +24,9 @@ include("basicfuns.jl")
 include("logsumexp.jl")
 
 if !isdefined(Base, :get_extension)
-    include("../ext/ChainRulesCoreExt.jl")
-    include("../ext/ChangesOfVariablesExt.jl")
-    include("../ext/InverseFunctionsExt.jl")
+    include("../ext/LogExpFunctionsChainRulesCoreExt.jl")
+    include("../ext/LogExpFunctionsChangesOfVariablesExt.jl")
+    include("../ext/LogExpFunctionsInverseFunctionsExt.jl")
 end
 
 end # module

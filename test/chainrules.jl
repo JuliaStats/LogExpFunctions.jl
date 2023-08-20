@@ -62,6 +62,8 @@
     for x in (-randexp(), randexp())
         test_frule(logcosh, x)
         test_rrule(logcosh, x)
+        test_frule(logabssinh, x)
+        test_rrule(logabssinh, x)
     end
 
     @testset "log1pexp" begin

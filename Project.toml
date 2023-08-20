@@ -1,7 +1,7 @@
 name = "LogExpFunctions"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
 authors = ["StatsFun.jl contributors, Tamas K. Papp <tkpapp@gmail.com>"]
-version = "0.3.20"
+version = "0.3.25"
 
 [deps]
 ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
@@ -17,16 +17,16 @@ ChangesOfVariables = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
 InverseFunctions = "3587e190-3f89-42d0-90ee-14403ec27112"
 
 [extensions]
-ChainRulesCoreExt = "ChainRulesCore"
-ChangesOfVariablesExt = "ChangesOfVariables"
-InverseFunctionsExt = "InverseFunctions"
+LogExpFunctionsChainRulesCoreExt = "ChainRulesCore"
+LogExpFunctionsChangesOfVariablesExt = "ChangesOfVariables"
+LogExpFunctionsInverseFunctionsExt = "InverseFunctions"
 
 [compat]
 ChainRulesCore = "1"
 ChangesOfVariables = "0.1"
 DocStringExtensions = "0.8, 0.9"
 InverseFunctions = "0.1"
-IrrationalConstants = "0.1"
+IrrationalConstants = "0.1, 0.2"
 julia = "1"
 
 [extras]
