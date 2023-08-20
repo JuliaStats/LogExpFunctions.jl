@@ -421,3 +421,5 @@ $(SIGNATURES)
 Compute the complementary double exponential, `1 - exp(-exp(x))`.
 """
 cexpexp(x) = -_expm1(-exp(x))
+# Definition not sufficiently accurate for `Float16`
+cexpexp(x::Float16) = Float16(cexpexp(Float32(x)))
