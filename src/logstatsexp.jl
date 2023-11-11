@@ -5,7 +5,7 @@ Computes `log.(mean(exp.(A); dims))`, in a numerically stable way.
 """
 function logmeanexp(A::AbstractArray; dims=:)
     R = logsumexp(A; dims=dims)
-    N = length(A) ÷ length(R)
+    N = convert(eltype(R), length(A) ÷ length(R))
     return R .- log(N)
 end
 
@@ -18,7 +18,7 @@ function logvarexp(
     A::AbstractArray; dims=:, corrected::Bool=true, logmean=logmeanexp(A; dims=dims)
 )
     R = logsumexp(2logsubexp.(A, logmean); dims=dims)
-    N = length(A) ÷ length(R)
+    N = convert(eltype(R), length(A) ÷ length(R))
 	if corrected
 		return R .- log(N - 1)
     else
