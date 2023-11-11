@@ -5,10 +5,10 @@ using LogExpFunctions: logmeanexp, logvarexp, logstdexp
 @testset "logmeanexp, logvarexp" begin
     A = randn(5,3,2)
     for dims in (2, (1,2), :)
-        @test logmeanexp(A; dims) ≈ log.(mean(exp.(A); dims))
+        @test logmeanexp(A; dims=dims) ≈ log.(mean(exp.(A); dims=dims))
         for corrected in (true, false)
-            @test logvarexp(A; dims, corrected) ≈ log.(var(exp.(A); dims, corrected))
-            @test logstdexp(A; dims, corrected) ≈ log.(std(exp.(A); dims, corrected))
+            @test logvarexp(A; dims=dims, corrected=corrected) ≈ log.(var(exp.(A); dims=dims, corrected=corrected))
+            @test logstdexp(A; dims=dims, corrected=corrected) ≈ log.(std(exp.(A); dims=dims, corrected=corrected))
         end
     end
     @test logvarexp(A; dims=2) ≈ log.(var(exp.(A); dims=2))
