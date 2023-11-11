@@ -15,7 +15,7 @@ end
 Computes `log.(var(exp.(A); dims))`, in a numerically stable way.
 """
 function logvarexp(
-    A::AbstractArray; dims=:, corrected::Bool=true, logmean=logmeanexp(A; dims)
+    A::AbstractArray; dims=:, corrected::Bool=true, logmean=logmeanexp(A; dims=dims)
 )
     R = logsumexp(2logsubexp.(A, logmean); dims)
     N = length(A) ÷ length(R)
