@@ -4,7 +4,7 @@
 Computes `log.(mean(exp.(A); dims))`, in a numerically stable way.
 """
 function logmeanexp(A::AbstractArray; dims=:)
-    R = logsumexp(A; dims)
+    R = logsumexp(A; dims=dims)
     N = length(A) ÷ length(R)
     return R .- log(N)
 end
@@ -17,7 +17,7 @@ Computes `log.(var(exp.(A); dims))`, in a numerically stable way.
 function logvarexp(
     A::AbstractArray; dims=:, corrected::Bool=true, logmean=logmeanexp(A; dims=dims)
 )
-    R = logsumexp(2logsubexp.(A, logmean); dims)
+    R = logsumexp(2logsubexp.(A, logmean); dims=dims)
     N = length(A) ÷ length(R)
 	if corrected
 		return R .- log(N - 1)
@@ -32,7 +32,7 @@ end
 Computes `log.(std(exp.(A); dims))`, in a numerically stable way.
 """
 function logstdexp(
-    A::AbstractArray; dims=:, corrected::Bool=true, logmean=logmeanexp(A; dims)
+    A::AbstractArray; dims=:, corrected::Bool=true, logmean=logmeanexp(A; dims=dims)
 )
-    return logvarexp(A; dims, corrected, logmean) / 2
+    return logvarexp(A; dims=dims, corrected=corrected, logmean=logmean) / 2
 end
