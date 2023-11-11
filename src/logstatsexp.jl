@@ -1,5 +1,5 @@
 """
-    logmeanexp(A; dims=:)
+    logmeanexp(A::AbstractArray; dims=:)
 
 Computes `log.(mean(exp.(A); dims))`, in a numerically stable way.
 """
@@ -10,7 +10,7 @@ function logmeanexp(A::AbstractArray; dims=:)
 end
 
 """
-    logvarexp(A; dims=:)
+    logvarexp(A::AbstractArray; dims=:)
 
 Computes `log.(var(exp.(A); dims))`, in a numerically stable way.
 """
@@ -27,7 +27,7 @@ function logvarexp(
 end
 
 """
-    logstdexp(A; dims=:)
+    logstdexp(A::AbstractArray; dims=:)
 
 Computes `log.(std(exp.(A); dims))`, in a numerically stable way.
 """
