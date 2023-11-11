@@ -20,7 +20,7 @@ end
 
 @testset "logmeanexp properties" begin
     X = randn(1000, 1000)
-    @test first(logmeanexp(logmeanexp(X; dims=1); dims=2) ≈ logmeanexp(X)
+    @test first(logmeanexp(logmeanexp(X; dims=1); dims=2)) ≈ logmeanexp(X)
     @test first(logmeanexp(-logmeanexp(-X; dims=1); dims=2)) ≤ first(-logmeanexp(-logmeanexp(X; dims=1); dims=2))
     x = randn()
     @test logmeanexp([x]) ≈ x
