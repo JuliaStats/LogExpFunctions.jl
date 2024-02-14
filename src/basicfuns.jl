@@ -62,7 +62,7 @@ end
 """
 $(SIGNATURES)
 
-Return `x * exp(y)` for `y > -Inf`, or zero if `y == -Inf` or x == 0 and y is finite.
+Return `x * exp(y)` for `y > -Inf`, or zero if `y == -Inf` or if `x == 0` and `y` is finite.
 
 ```jldoctest
 julia> xexpy(1.0, -Inf)
