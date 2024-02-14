@@ -73,6 +73,9 @@ end
     for x in (randn(), randn(Float32))
         @test xexpy(x, x) ≈ xexpx(x)
     end
+    @test xexpy(0, 1000) == 0.0
+    @test xexpy(0, Inf) == NaN
+    @test xexpy(0, NaN) == NaN
 end
 
 @testset "logistic & logit" begin
