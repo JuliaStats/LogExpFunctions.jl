@@ -74,8 +74,8 @@ end
         @test xexpy(x, x) ≈ xexpx(x)
     end
     @test xexpy(0, 1000) == 0.0
-    @test xexpy(0, Inf) == NaN
-    @test xexpy(0, NaN) == NaN
+    @test isnan(xexpy(0, Inf))
+    @test isnan(xexpy(0, NaN))
 end
 
 @testset "logistic & logit" begin
