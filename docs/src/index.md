@@ -31,4 +31,7 @@ softmax!
 softmax
 cloglog
 cexpexp
+logmeanexp
+logvarexp
+logstdexp
 ```
