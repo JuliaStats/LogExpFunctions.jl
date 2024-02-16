@@ -62,7 +62,7 @@ end
 """
 $(SIGNATURES)
 
-Return `x * exp(y)` for `y > -Inf`, or zero if `y == -Inf`.
+Return `x * exp(y)` for `y > -Inf`, or zero if `y == -Inf` or if `x == 0` and `y` is finite.
 
 ```jldoctest
 julia> xexpy(1.0, -Inf)
@@ -72,7 +72,7 @@ julia> xexpy(1.0, -Inf)
 function xexpy(x::Real, y::Real)
     expy = exp(y)
     result = x * expy
-    return iszero(expy) && !isnan(x) ? zero(result) : result
+    return (iszero(x) && isfinite(y)) || (iszero(expy) && !isnan(x)) ? zero(result) : result
 end
 
 # The following bounds are precomputed versions of the following abstract
