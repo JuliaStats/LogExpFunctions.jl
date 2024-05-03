@@ -455,8 +455,10 @@ than the naive composition of functions.
 
 Its inverse is the [`logitexp`](@ref) function.
 """
-loglogistic(x::AbstractFloat) = -log1pexp(-x)
-loglogistic(x::T) where {T<:Real} = -log1pexp(-convert(promote_type(Float64, T), x))
+loglogistic(x::Real) = -log1pexp(-x)
+loglogistic(x::T) where {T<:Integer} = loglogistic(convert(promote_type(Float64, T), x))
+loglogistic(x::T) where {U<:Integer, T<:Rational{U}} =
+    loglogistic(convert(promote_type(Float64, T), x))
 
 #=
 this uses the identity:
