@@ -450,13 +450,12 @@ log(logistic(x)) = -log(1 + exp(-x))
 """
 $(SIGNATURES)
 
-The natural logarithm of the `logistic` function, computed more
-carefully and with fewer calls than than the composition
-`log(logistic(x))`.
+Return `log(logistic(x))`, computed more carefully and with fewer calls
+than the naive composition of functions.
 
 Its inverse is the [`logitexp`](@ref) function.
 """
-loglogistic(x::AbstractFloat) = -log1pexp(-x) #
+loglogistic(x::AbstractFloat) = -log1pexp(-x)
 loglogistic(x::T) where {T<:Real} = -log1pexp(-convert(promote_type(Float64, T), x))
 
 #=
@@ -467,8 +466,8 @@ logit(exp(x)) = log(exp(x) / (1 + exp(x))) = log(exp(x)) - log(1 - exp(x))
 """
 $(SIGNATURES)
 
-The logit of the exponential of `x`, computed more carefully and
-with fewer function calls than `logit(exp(x))`
+Return `logit(exp(x))`, computed more carefully and with fewer calls than
+the the naive composition of functions.
 
 Its inverse is the [`loglogistic`](@ref) function.
 """
@@ -485,9 +484,8 @@ that is, negation in the log-odds domain.
 """
 $(SIGNATURES)
 
-The natural logarithm of the 1 minus the inverse logit function,
-computed more carefully and with fewer function calls than `log(1 -
-logistic(x))`.
+Return `log(1 - logistic(x))`, computed more carefully and with fewer calls than
+the the naive composition of functions.
 
 Its inverse is the [`logit1mexp`](@ref) function.
 """
@@ -503,9 +501,8 @@ log-odds scale, i.e. -logit(exp(x)) = log(1 - exp(x)) - log(exp(x))
 """
 $(SIGNATURES)
 
-The logit of 1 minus the exponential of `x`, computed more carefully
-and with fewer function calls than `logit(1 - exp(x))`.
-
+Return `logit(1 - exp(x))`, computed more carefully and with fewer calls than
+the the naive composition of functions.
 
 Its inverse is the [`log1mlogistic`](@ref) function.
 """
