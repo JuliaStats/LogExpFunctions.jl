@@ -31,4 +31,8 @@ softmax!
 softmax
 cloglog
 cexpexp
+loglogistic
+logitexp
+log1mlogistic
+logit1mexp
 ```

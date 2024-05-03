@@ -448,7 +448,7 @@ this uses the identity:
 log(logistic(x)) = -log(1 + exp(-x))
 =#
 """
-    loglogistic(x)
+$(SIGNATURES)
 
 The natural logarithm of the `logistic` function, computed more
 carefully and with fewer calls than than the composition
@@ -465,7 +465,7 @@ this uses the identity:
 logit(exp(x)) = log(exp(x) / (1 + exp(x))) = log(exp(x)) - log(1 - exp(x))
 =#
 """
-    logitexp(x)
+$(SIGNATURES)
 
 The logit of the exponential of `x`, computed more carefully and
 with fewer function calls than `logit(exp(x))`
@@ -483,7 +483,7 @@ that is, negation in the log-odds domain.
 =#
 
 """
-    log1mlogistic(x)
+$(SIGNATURES)
 
 The natural logarithm of the 1 minus the inverse logit function,
 computed more carefully and with fewer function calls than `log(1 -
@@ -501,7 +501,7 @@ log-odds scale, i.e. -logit(exp(x)) = log(1 - exp(x)) - log(exp(x))
 =#
 
 """
-    logit1mexp(x)
+$(SIGNATURES)
 
 The logit of 1 minus the exponential of `x`, computed more carefully
 and with fewer function calls than `logit(1 - exp(x))`.
