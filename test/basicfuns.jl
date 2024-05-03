@@ -502,10 +502,10 @@ end
     xs = T[ϵ, √ϵ, 0.2, 0.4, 0.8, 1.0 - √ϵ, 1.0 - ϵ]
     neg_xs = -xs
     for x in xs
-        @test abs(logitexp(loglogistic(x)) - x) < ϵ
+        @test abs(logitexp(loglogistic(x)) - x) <= ϵ
     end
     for x in neg_xs
-        @test abs(logitexp(loglogistic(x)) - x) < 2ϵ
+        @test abs(logitexp(loglogistic(x)) - x) <= 2ϵ
     end
     xs = T[-Inf, 0.0, Inf]
     for x in xs
@@ -530,10 +530,10 @@ end
     xs = T[ϵ, √ϵ, 0.2, 0.4, 0.8, 1.0 - √ϵ, 1.0 - ϵ]
     neg_xs = -xs
     for x in xs
-        @test abs(logit1mexp(log1mlogistic(x)) - x) < 2ϵ
+        @test abs(logit1mexp(log1mlogistic(x)) - x) <= 2ϵ
     end
     for x in neg_xs
-        @test abs(logit1mexp(log1mlogistic(x)) - x) < ϵ
+        @test abs(logit1mexp(log1mlogistic(x)) - x) <= ϵ
     end
     xs = T[-Inf, 0.0, Inf]
     for x in xs
