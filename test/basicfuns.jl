@@ -540,3 +540,21 @@ end
         @test logit1mexp(log1mlogistic(x)) == x
     end
 end
+
+@testset "correctness wrt Unsigned, Rational" begin
+    @test loglogistic(UInt64(5)) == loglogistic(5.0)
+    @test log1mlogistic(UInt64(5)) == log1mlogistic(5.0)
+
+    @test loglogistic(0x01//0x02) == loglogistic(0.5)
+    @test log1mlogistic(0x01//0x02) == log1mlogistic(0.5)
+end
+
+@testset "correctness wrt Integer edge case" begin
+    # If not handled, these will be zero
+    @test loglogistic(typemin(Int)) == loglogistic(float(typemin(Int)))
+    @test log1mlogistic(typemin(Int)) == log1mlogistic(float(typemin(Int)))
+
+    # If not handled, these would throw since negation at typemin is a round-trip
+    @test logitexp(typemin(Int)) == logitexp(float(typemin(Int)))
+    @test logit1mexp(typemin(Int)) == logit1mexp(float(typemin(Int)))
+end
