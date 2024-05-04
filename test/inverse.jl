@@ -11,4 +11,10 @@
 
     InverseFunctions.test_inverse(cloglog, rand())
     InverseFunctions.test_inverse(cexpexp, rand())
+
+    InverseFunctions.test_inverse(loglogistic, randexp())
+    InverseFunctions.test_inverse(logitexp, -randexp())
+
+    InverseFunctions.test_inverse(log1mlogistic, randexp())
+    InverseFunctions.test_inverse(logit1mexp, -randexp())
 end
