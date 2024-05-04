@@ -462,13 +462,13 @@ loglogistic(x::Rational) = loglogistic(float(x))
 #=
 this uses the identity:
 
-logit(exp(x)) = log(exp(x) / (1 + exp(x))) = log(exp(x)) - log(1 - exp(x))
+logit(exp(x)) = log(exp(x) / (1 + exp(x))) = -log(exp(-x) - 1)
 =#
 """
 $(SIGNATURES)
 
 Return `logit(exp(x))`, computed more carefully and with fewer calls than
-the the naive composition of functions.
+the naive composition of functions.
 
 Its inverse is the [`loglogistic`](@ref) function.
 """
@@ -486,7 +486,7 @@ that is, negation in the log-odds domain.
 $(SIGNATURES)
 
 Return `log(1 - logistic(x))`, computed more carefully and with fewer calls than
-the the naive composition of functions.
+the naive composition of functions.
 
 Its inverse is the [`logit1mexp`](@ref) function.
 """
@@ -494,16 +494,16 @@ log1mlogistic(x::Real) = -log1pexp(x)
 
 #=
 
-this uses the same identity as `logitexp`, followed by negation on the
-log-odds scale, i.e. -logit(exp(x)) = log(1 - exp(x)) - log(exp(x))
+this uses the same identity:
 
+-logit(exp(x)) = logit(1 - exp(x)) = log((1 - exp(x)) / exp(x)) = log(exp(-x) - 1)
 =#
 
 """
 $(SIGNATURES)
 
 Return `logit(1 - exp(x))`, computed more carefully and with fewer calls than
-the the naive composition of functions.
+the naive composition of functions.
 
 Its inverse is the [`log1mlogistic`](@ref) function.
 """
