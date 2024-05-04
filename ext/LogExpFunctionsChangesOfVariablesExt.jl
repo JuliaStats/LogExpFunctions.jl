@@ -42,4 +42,24 @@ function ChangesOfVariables.with_logabsdet_jacobian(::typeof(logcosh), x::Real)
     return y, log1mexp(a) - z
 end
 
+function ChangesOfVariables.with_logabsdet_jacobian(::typeof(loglogistic), x::Real)
+    y = loglogistic(x)
+    return y, y - x
+end
+
+function ChangesOfVariables.with_logabsdet_jacobian(::typeof(log1mlogistic), x::Real)
+    y = log1mlogistic(x)
+    return y, x + y
+end
+
+function ChangesOfVariables.with_logabsdet_jacobian(::typeof(logitexp), x::Real)
+    y = logitexp(x)
+    return y, y - x
+end
+
+function ChangesOfVariables.with_logabsdet_jacobian(::typeof(logit1mexp), x::Real)
+    y = logit1mexp(x)
+    return y, -y - x
+end
+
 end # module
