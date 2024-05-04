@@ -456,8 +456,7 @@ than the naive composition of functions.
 Its inverse is the [`logitexp`](@ref) function.
 """
 loglogistic(x::Real) = -log1pexp(-x)
-loglogistic(x::Integer) = loglogistic(float(x))
-loglogistic(x::Rational) = loglogistic(float(x))
+loglogistic(x::Union{Integer, Rational}) = loglogistic(float(x))
 
 #=
 this uses the identity:
@@ -473,8 +472,7 @@ the naive composition of functions.
 Its inverse is the [`loglogistic`](@ref) function.
 """
 logitexp(x::Real) = -logexpm1(-x)
-logitexp(x::Integer) = logitexp(float(x))
-logitexp(x::Rational) = logitexp(float(x))
+logitexp(x::Union{Integer, Rational}) = logitexp(float(x))
 
 #=
 this uses the identity:
@@ -510,5 +508,4 @@ the naive composition of functions.
 Its inverse is the [`log1mlogistic`](@ref) function.
 """
 logit1mexp(x::Real) = logexpm1(-x)
-logit1mexp(x::Integer) = logit1mexp(float(x))
-logit1mexp(x::Rational) = logit1mexp(float(x))
+logit1mexp(x::Union{Integer, Rational}) = logit1mexp(float(x))
