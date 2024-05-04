@@ -472,7 +472,7 @@ the naive composition of functions.
 
 Its inverse is the [`loglogistic`](@ref) function.
 """
-logitexp(x::Real) = x - log1mexp(x)
+logitexp(x::Real) = -logexpm1(-x)
 
 #=
 this uses the identity:
@@ -507,4 +507,4 @@ the naive composition of functions.
 
 Its inverse is the [`log1mlogistic`](@ref) function.
 """
-logit1mexp(x::Real) = log1mexp(x) - x
+logit1mexp(x::Real) = logexpm1(-x)
