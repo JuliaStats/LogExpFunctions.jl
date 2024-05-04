@@ -4,7 +4,7 @@ Various special functions based on `log` and `exp` moved from [StatsFuns.jl](htt
 
 The original authors of these functions are the StatsFuns.jl contributors.
 
-LogExpFunctions supports [`InverseFunctions.inverse`](https://github.com/JuliaMath/InverseFunctions.jl) and [`ChangesOfVariables.test_with_logabsdet_jacobian`](https://github.com/JuliaMath/ChangesOfVariables.jl) for `log1mexp`, `log1pexp`, `log2mexp`, `logexpm1`, `logistic`, `logit`, and `logcosh` (no inverse).
+LogExpFunctions supports [`InverseFunctions.inverse`](https://github.com/JuliaMath/InverseFunctions.jl) and [`ChangesOfVariables.test_with_logabsdet_jacobian`](https://github.com/JuliaMath/ChangesOfVariables.jl) for `log1mexp`, `log1pexp`, `log2mexp`, `logexpm1`, `logistic`, `logit`, `loglogistic`, `logitexp`, `log1mlogistic`, `logit1mexp`, and `logcosh` (no inverse).
 
 ```@docs
 xlogx
