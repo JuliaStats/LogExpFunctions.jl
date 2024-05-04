@@ -24,5 +24,5 @@
     ChangesOfVariables.test_with_logabsdet_jacobian(logitexp, -x, derivative)
 
     ChangesOfVariables.test_with_logabsdet_jacobian(log1mlogistic, x, derivative)
-    ChangesOfVariables.test_with_logabsdet_jacobian(log1mitexp, -x, derivative)
+    ChangesOfVariables.test_with_logabsdet_jacobian(logit1mexp, -x, derivative)
 end
