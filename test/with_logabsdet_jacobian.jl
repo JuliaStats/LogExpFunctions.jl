@@ -19,4 +19,10 @@
 
     ChangesOfVariables.test_with_logabsdet_jacobian(logcosh, x, derivative)
     ChangesOfVariables.test_with_logabsdet_jacobian(logcosh, -x, derivative)
+
+    ChangesOfVariables.test_with_logabsdet_jacobian(loglogistic, x, derivative)
+    ChangesOfVariables.test_with_logabsdet_jacobian(logitexp, -x, derivative)
+
+    ChangesOfVariables.test_with_logabsdet_jacobian(log1mlogistic, x, derivative)
+    ChangesOfVariables.test_with_logabsdet_jacobian(log1mitexp, -x, derivative)
 end
