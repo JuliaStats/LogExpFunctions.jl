@@ -187,4 +187,9 @@ end
 ChainRulesCore.@scalar_rule(cloglog(x), (-inv((1 - x) * log1p(-x)),))
 ChainRulesCore.@scalar_rule(cexpexp(x), (-xexpx(-exp(x)),))
 
+ChainRulesCore.@scalar_rule(loglogistic(x::Real), (logistic(-x),))
+ChainRulesCore.@scalar_rule(log1mlogistic(x::Real), (-logistic(x),))
+ChainRulesCore.@scalar_rule(logitexp(x::Real), (inv(1 - exp(x)),))
+ChainRulesCore.@scalar_rule(logit1mexp(x::Real), (-inv(1 - exp(x)),))
+
 end # module
