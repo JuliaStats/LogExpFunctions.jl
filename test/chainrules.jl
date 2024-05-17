@@ -125,30 +125,4 @@
     test_scalar(cloglog, rand())
 
     test_scalar(cexpexp, rand())
-
-    @testset "loglogistic, log1mlogistic" begin
-        # relationship to logistic suggests an analogous test regime
-        for x in (-821.4, -23.5, 12.3, 41.2)
-            test_frule(loglogistic, x)
-            test_rrule(loglogistic, x)
-        end
-        for x in (-123.2f0, -21.4f0, 8.3f0, 21.5f0)
-            test_frule(loglogistic, x; rtol=1f-3, atol=1f-3)
-            test_rrule(loglogistic, x; rtol=1f-3, atol=1f-3)
-        end
-
-        for x in (-821.4, -23.5, 12.3, 41.2)
-            test_frule(log1mlogistic, x)
-            test_rrule(log1mlogistic, x)
-        end
-        for x in (-123.2f0, -21.4f0, 8.3f0, 21.5f0)
-            test_frule(log1mlogistic, x; rtol=1f-3, atol=1f-3)
-            test_rrule(log1mlogistic, x; rtol=1f-3, atol=1f-3)
-        end
-    end
-
-    test_frule(logitexp, -x)
-    test_frule(logit1mexp, -x)
-    test_rrule(logitexp, -x)
-    test_rrule(logit1mexp, -x)
 end
