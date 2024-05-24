@@ -494,6 +494,8 @@ end
     @test isfinite(loglogistic(-T(745.0)))
     @test isfinite(loglogistic(T(50.0)))
     @test isfinite(loglogistic(T(745.0)))
+    @test isnan(loglogistic(T(NaN)))
+    @test isnan(loglogistic(T(-NaN)))
 
     # type-consistency
     xs = T[Inf, -Inf, 0.0, lim1, lim2, ϵ, 1.0, 18.0, 33.3, 50.0]
@@ -518,6 +520,10 @@ end
         @test logitexp(loglogistic(x)) == x
     end
 
+    # misc
+    @test isnan(logitexp(T(NaN)))
+    @test isnan(logitexp(T(-NaN)))
+
     # type-consistency
     xs = loglogistic.([T[ϵ, √ϵ, 0.2, 0.4, 0.8, 1.0 - √ϵ, 1.0 - ϵ]; neg_xs; T[-Inf, 0.0, Inf]])
     for x in xs
@@ -534,8 +540,11 @@ end
     @test isfinite(log1mlogistic(-T(745.0)))
     @test isfinite(log1mlogistic(T(50.0)))
     @test isfinite(log1mlogistic(T(745.0)))
+    @test isnan(log1mlogistic(T(NaN)))
+    @test isnan(log1mlogistic(T(-NaN)))
 
     # type-consistency
+    ϵ = eps(T)
     lim1 = T === Float16 ? -14.0 : -50.0
     lim2 = T === Float16 ? -10.0 : -37.0
     xs = T[Inf, -Inf, 0.0, lim1, lim2, ϵ, 1.0, 18.0, 33.3, 50.0]
@@ -559,6 +568,10 @@ end
     for x in xs
         @test logit1mexp(log1mlogistic(x)) == x
     end
+
+    # misc
+    @test isnan(logit1mexp(T(NaN)))
+    @test isnan(logit1mexp(T(-NaN)))
 
     # type-consistency
     xs = log1mlogistic.([T[ϵ, √ϵ, 0.2, 0.4, 0.8, 1.0 - √ϵ, 1.0 - ϵ]; neg_xs; T[-Inf, 0.0, Inf]])
