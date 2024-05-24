@@ -536,6 +536,8 @@ end
     @test isfinite(log1mlogistic(T(745.0)))
 
     # type-consistency
+    lim1 = T === Float16 ? -14.0 : -50.0
+    lim2 = T === Float16 ? -10.0 : -37.0
     xs = T[Inf, -Inf, 0.0, lim1, lim2, ϵ, 1.0, 18.0, 33.3, 50.0]
     for x in xs
         @test typeof(log1mlogistic(x)) === T
