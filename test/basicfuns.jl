@@ -494,6 +494,12 @@ end
     @test isfinite(loglogistic(-T(745.0)))
     @test isfinite(loglogistic(T(50.0)))
     @test isfinite(loglogistic(T(745.0)))
+
+    # type-consistency
+    xs = T[Inf, -Inf, 0.0, lim1, lim2, ϵ, 1.0, 18.0, 33.3, 50.0]
+    for x in xs
+        @test typeof(loglogistic(x)) === T
+    end
 end
 
 
@@ -511,6 +517,12 @@ end
     for x in xs
         @test logitexp(loglogistic(x)) == x
     end
+
+    # type-consistency
+    xs = loglogistic.([T[ϵ, √ϵ, 0.2, 0.4, 0.8, 1.0 - √ϵ, 1.0 - ϵ]; neg_xs; T[-Inf, 0.0, Inf]])
+    for x in xs
+        @test typeof(logitexp(x)) === T
+    end
 end
 
 @testset "log1mlogistic: $T" for T in (Float16, Float32, Float64)
@@ -522,6 +534,12 @@ end
     @test isfinite(log1mlogistic(-T(745.0)))
     @test isfinite(log1mlogistic(T(50.0)))
     @test isfinite(log1mlogistic(T(745.0)))
+
+    # type-consistency
+    xs = T[Inf, -Inf, 0.0, lim1, lim2, ϵ, 1.0, 18.0, 33.3, 50.0]
+    for x in xs
+        @test typeof(log1mlogistic(x)) === T
+    end
 end
 
 
@@ -539,22 +557,57 @@ end
     for x in xs
         @test logit1mexp(log1mlogistic(x)) == x
     end
+
+    # type-consistency
+    xs = log1mlogistic.([T[ϵ, √ϵ, 0.2, 0.4, 0.8, 1.0 - √ϵ, 1.0 - ϵ]; neg_xs; T[-Inf, 0.0, Inf]])
+    for x in xs
+        @test typeof(logit1mexp(x)) === T
+    end
 end
 
-@testset "correctness wrt Unsigned, Rational" begin
-    @test loglogistic(UInt64(5)) == loglogistic(5.0)
-    @test log1mlogistic(UInt64(5)) == log1mlogistic(5.0)
+@testset "loglogistic, log1mlogistic correctness wrt Unsigned, Rational: $T" for T in
+    (UInt8, UInt16, UInt32, UInt64, UInt128)
+    @test loglogistic(T(5)) == loglogistic(5.0)
+    @test log1mlogistic(T(5)) == log1mlogistic(5.0)
 
-    @test loglogistic(0x01//0x02) == loglogistic(0.5)
-    @test log1mlogistic(0x01//0x02) == log1mlogistic(0.5)
+    @test loglogistic(T(0x01)//T(0x02)) == loglogistic(0.5)
+    @test log1mlogistic(T(0x01)//T(0x02)) == log1mlogistic(0.5)
+
+    @test loglogistic(T(0x01)//T(0x00)) == loglogistic(Inf)
+    @test log1mlogistic(T(0x01)//T(0x00)) == log1mlogistic(Inf)
+
 end
 
-@testset "correctness wrt Integer edge case" begin
+@testset "loglogistic, log1mlogistic, logitexp, logit1mexp correctness wrt Integer edge case: $T" for T in
+    (Int8, Int16, Int32, Int64, Int128)
     # If not handled, these will be zero
-    @test loglogistic(typemin(Int)) == loglogistic(float(typemin(Int)))
-    @test log1mlogistic(typemin(Int)) == log1mlogistic(float(typemin(Int)))
+    @test loglogistic(typemin(T)) == loglogistic(float(typemin(T)))
+    @test log1mlogistic(typemin(T)) == log1mlogistic(float(typemin(T)))
 
     # If not handled, these would throw since negation at typemin is a round-trip
-    @test logitexp(typemin(Int)) == logitexp(float(typemin(Int)))
-    @test logit1mexp(typemin(Int)) == logit1mexp(float(typemin(Int)))
+    @test logitexp(typemin(T)) == logitexp(float(typemin(T)))
+    @test logit1mexp(typemin(T)) == logit1mexp(float(typemin(T)))
+end
+
+@testset "loglogistic, log1mlogistic, logitexp, logit1mexp return types" begin
+    for T in
+        (UInt8, UInt16, UInt32, UInt64, UInt128, Int8, Int16, Int32, Int64, Int128)
+        @test typeof(loglogistic(T(5))) === Float64
+        @test typeof(log1mlogistic(T(5))) === Float64
+        @test typeof(loglogistic(T(0x01)//T(0x02))) === Float64
+        @test typeof(log1mlogistic(T(0x01)//T(0x02))) === Float64
+        @test typeof(logitexp(T(0))) === Float64
+        @test typeof(logit1mexp(T(0))) === Float64
+    end
+    @test typeof(loglogistic(BigInt(5))) === BigFloat
+    @test typeof(log1mlogistic(BigInt(5))) === BigFloat
+    @test typeof(loglogistic(BigInt(0x01)//BigInt(0x02))) === BigFloat
+    @test typeof(log1mlogistic(BigInt(0x01)//BigInt(0x02))) === BigFloat
+    @test typeof(logitexp(BigInt(0))) === BigFloat
+    @test typeof(logit1mexp(BigInt(0))) === BigFloat
+
+    @test typeof(loglogistic(BigFloat(5))) === BigFloat
+    @test typeof(log1mlogistic(BigFloat(5))) === BigFloat
+    @test typeof(logitexp(BigFloat(0))) === BigFloat
+    @test typeof(logit1mexp(BigFloat(0))) === BigFloat
 end
