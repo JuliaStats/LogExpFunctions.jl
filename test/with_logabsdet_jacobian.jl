@@ -19,4 +19,19 @@
 
     ChangesOfVariables.test_with_logabsdet_jacobian(logcosh, x, derivative)
     ChangesOfVariables.test_with_logabsdet_jacobian(logcosh, -x, derivative)
+
+    dloglogistic(x) = logistic(-x)
+    dlog1mlogistic(x) = -logistic(x)
+    dlogitexp(x) = inv(1 - exp(x))
+    dlogit1mexp(x) = -inv(1 - exp(x))
+    derivative(f::typeof(loglogistic), x) = dloglogistic(x)
+    derivative(f::typeof(log1mlogistic), x) = dlog1mlogistic(x)
+    derivative(f::typeof(logitexp), x) = dlogitexp(x)
+    derivative(f::typeof(logit1mexp), x) = dlogit1mexp(x)
+
+    ChangesOfVariables.test_with_logabsdet_jacobian(loglogistic, x, derivative)
+    ChangesOfVariables.test_with_logabsdet_jacobian(logitexp, -x, derivative)
+
+    ChangesOfVariables.test_with_logabsdet_jacobian(log1mlogistic, x, derivative)
+    ChangesOfVariables.test_with_logabsdet_jacobian(logit1mexp, -x, derivative)
 end

@@ -468,3 +468,161 @@ end
     @test cexpexp(-Inf) == 0.0
     @test cexpexp(0) == (ℯ - 1) / ℯ
 end
+
+@testset "loglogistic: $T" for T in (Float16, Float32, Float64)
+    lim1 = T === Float16 ? -14.0 : -50.0
+    lim2 = T === Float16 ? -10.0 : -37.0
+    xs = T[Inf, -Inf, 0.0, lim1, lim2]
+    for x in xs
+        @test loglogistic(x) == log(logistic(x))
+    end
+
+    ϵ = eps(T)
+    xs = T[ϵ, 1.0, 18.0, 33.3, 50.0]
+    for x in xs
+        lhs = loglogistic(x)
+        rhs = log(logistic(x))
+        @test abs(lhs - rhs) < ϵ
+    end
+
+    # misc
+    @test loglogistic(T(Inf)) == -zero(T)
+    @test loglogistic(-T(Inf)) == -T(Inf)
+    @test loglogistic(-T(103.0)) == -T(103.0)
+    @test abs(loglogistic(T(35.0))) < 3eps(T)
+    @test abs(loglogistic(T(103.0))) < eps(T)
+    @test isfinite(loglogistic(-T(745.0)))
+    @test isfinite(loglogistic(T(50.0)))
+    @test isfinite(loglogistic(T(745.0)))
+    @test isnan(loglogistic(T(NaN)))
+    @test isnan(loglogistic(T(-NaN)))
+
+    # type-consistency
+    xs = T[Inf, -Inf, 0.0, lim1, lim2, ϵ, 1.0, 18.0, 33.3, 50.0]
+    for x in xs
+        @test typeof(loglogistic(x)) === T
+    end
+end
+
+
+@testset "logitexp: $T" for T in (Float16, Float32, Float64)
+    ϵ = eps(T)
+    xs = T[ϵ, √ϵ, 0.2, 0.4, 0.8, 1.0 - √ϵ, 1.0 - ϵ]
+    neg_xs = -xs
+    for x in xs
+        @test abs(logitexp(loglogistic(x)) - x) <= ϵ
+    end
+    for x in neg_xs
+        @test abs(logitexp(loglogistic(x)) - x) <= 2ϵ
+    end
+    xs = T[-Inf, 0.0, Inf]
+    for x in xs
+        @test logitexp(loglogistic(x)) == x
+    end
+
+    # misc
+    @test isnan(logitexp(T(NaN)))
+    @test isnan(logitexp(T(-NaN)))
+
+    # type-consistency
+    xs = loglogistic.([T[ϵ, √ϵ, 0.2, 0.4, 0.8, 1.0 - √ϵ, 1.0 - ϵ]; neg_xs; T[-Inf, 0.0, Inf]])
+    for x in xs
+        @test typeof(logitexp(x)) === T
+    end
+end
+
+@testset "log1mlogistic: $T" for T in (Float16, Float32, Float64)
+    @test log1mlogistic(T(Inf)) == -T(Inf)
+    @test log1mlogistic(-T(Inf)) == -zero(T)
+    @test log1mlogistic(-T(103.0)) < eps(T)
+    @test abs(log1mlogistic(T(35.0))) == T(35.0)
+    @test abs(log1mlogistic(T(103.0))) == T(103.0)
+    @test isfinite(log1mlogistic(-T(745.0)))
+    @test isfinite(log1mlogistic(T(50.0)))
+    @test isfinite(log1mlogistic(T(745.0)))
+    @test isnan(log1mlogistic(T(NaN)))
+    @test isnan(log1mlogistic(T(-NaN)))
+
+    # type-consistency
+    ϵ = eps(T)
+    lim1 = T === Float16 ? -14.0 : -50.0
+    lim2 = T === Float16 ? -10.0 : -37.0
+    xs = T[Inf, -Inf, 0.0, lim1, lim2, ϵ, 1.0, 18.0, 33.3, 50.0]
+    for x in xs
+        @test typeof(log1mlogistic(x)) === T
+    end
+end
+
+
+@testset "logit1mexp: $T" for T in (Float16, Float32, Float64)
+    ϵ = eps(T)
+    xs = T[ϵ, √ϵ, 0.2, 0.4, 0.8, 1.0 - √ϵ, 1.0 - ϵ]
+    neg_xs = -xs
+    for x in xs
+        @test abs(logit1mexp(log1mlogistic(x)) - x) <= 2ϵ
+    end
+    for x in neg_xs
+        @test abs(logit1mexp(log1mlogistic(x)) - x) <= ϵ
+    end
+    xs = T[-Inf, 0.0, Inf]
+    for x in xs
+        @test logit1mexp(log1mlogistic(x)) == x
+    end
+
+    # misc
+    @test isnan(logit1mexp(T(NaN)))
+    @test isnan(logit1mexp(T(-NaN)))
+
+    # type-consistency
+    xs = log1mlogistic.([T[ϵ, √ϵ, 0.2, 0.4, 0.8, 1.0 - √ϵ, 1.0 - ϵ]; neg_xs; T[-Inf, 0.0, Inf]])
+    for x in xs
+        @test typeof(logit1mexp(x)) === T
+    end
+end
+
+@testset "loglogistic, log1mlogistic correctness wrt Unsigned, Rational: $T" for T in
+    (UInt8, UInt16, UInt32, UInt64, UInt128)
+    @test loglogistic(T(5)) == loglogistic(5.0)
+    @test log1mlogistic(T(5)) == log1mlogistic(5.0)
+
+    @test loglogistic(T(0x01)//T(0x02)) == loglogistic(0.5)
+    @test log1mlogistic(T(0x01)//T(0x02)) == log1mlogistic(0.5)
+
+    @test loglogistic(T(0x01)//T(0x00)) == loglogistic(Inf)
+    @test log1mlogistic(T(0x01)//T(0x00)) == log1mlogistic(Inf)
+
+end
+
+@testset "loglogistic, log1mlogistic, logitexp, logit1mexp correctness wrt Integer edge case: $T" for T in
+    (Int8, Int16, Int32, Int64, Int128)
+    # If not handled, these will be zero
+    @test loglogistic(typemin(T)) == loglogistic(float(typemin(T)))
+    @test log1mlogistic(typemin(T)) == log1mlogistic(float(typemin(T)))
+
+    # If not handled, these would throw since negation at typemin is a round-trip
+    @test logitexp(typemin(T)) == logitexp(float(typemin(T)))
+    @test logit1mexp(typemin(T)) == logit1mexp(float(typemin(T)))
+end
+
+@testset "loglogistic, log1mlogistic, logitexp, logit1mexp return types" begin
+    for T in
+        (UInt8, UInt16, UInt32, UInt64, UInt128, Int8, Int16, Int32, Int64, Int128)
+        @test typeof(loglogistic(T(5))) === Float64
+        @test typeof(log1mlogistic(T(5))) === Float64
+        @test typeof(loglogistic(T(0x01)//T(0x02))) === Float64
+        @test typeof(log1mlogistic(T(0x01)//T(0x02))) === Float64
+        @test typeof(logitexp(T(0))) === Float64
+        @test typeof(logit1mexp(T(0))) === Float64
+    end
+    @test typeof(loglogistic(BigInt(5))) === BigFloat
+    @test typeof(log1mlogistic(BigInt(5))) === BigFloat
+    @test typeof(loglogistic(BigInt(0x01)//BigInt(0x02))) === BigFloat
+    @test typeof(log1mlogistic(BigInt(0x01)//BigInt(0x02))) === BigFloat
+    @test typeof(logitexp(BigInt(0))) === BigFloat
+    @test typeof(logit1mexp(BigInt(0))) === BigFloat
+
+    @test typeof(loglogistic(BigFloat(5))) === BigFloat
+    @test typeof(log1mlogistic(BigFloat(5))) === BigFloat
+    @test typeof(logitexp(BigFloat(0))) === BigFloat
+    @test typeof(logit1mexp(BigFloat(0))) === BigFloat
+end

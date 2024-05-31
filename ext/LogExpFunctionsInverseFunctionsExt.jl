@@ -16,4 +16,10 @@ InverseFunctions.inverse(::typeof(logistic)) = logit
 InverseFunctions.inverse(::typeof(cloglog)) = cexpexp
 InverseFunctions.inverse(::typeof(cexpexp)) = cloglog
 
+InverseFunctions.inverse(::typeof(loglogistic)) = logitexp
+InverseFunctions.inverse(::typeof(logitexp)) = loglogistic
+
+InverseFunctions.inverse(::typeof(log1mlogistic)) = logit1mexp
+InverseFunctions.inverse(::typeof(logit1mexp)) = log1mlogistic
+
 end # module

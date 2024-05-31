@@ -441,3 +441,68 @@ $(SIGNATURES)
 Compute the complementary double exponential, `1 - exp(-exp(x))`.
 """
 cexpexp(x) = -_expm1(-exp(x))
+
+#=
+this uses the identity:
+
+log(logistic(x)) = -log(1 + exp(-x))
+=#
+"""
+$(SIGNATURES)
+
+Return `log(logistic(x))`, computed more carefully and with fewer calls
+than the naive composition of functions.
+
+Its inverse is the [`logitexp`](@ref) function.
+"""
+loglogistic(x::Real) = -log1pexp(-float(x))
+
+#=
+this uses the identity:
+
+logit(exp(x)) = log(exp(x) / (1 + exp(x))) = -log(exp(-x) - 1)
+=#
+"""
+$(SIGNATURES)
+
+Return `logit(exp(x))`, computed more carefully and with fewer calls than
+the naive composition of functions.
+
+Its inverse is the [`loglogistic`](@ref) function.
+"""
+logitexp(x::Real) = -logexpm1(-float(x))
+
+#=
+this uses the identity:
+
+log(logistic(-x)) = -log(1 + exp(x))
+
+that is, negation in the log-odds domain.
+=#
+
+"""
+$(SIGNATURES)
+
+Return `log(1 - logistic(x))`, computed more carefully and with fewer calls than
+the naive composition of functions.
+
+Its inverse is the [`logit1mexp`](@ref) function.
+"""
+log1mlogistic(x::Real) = -log1pexp(x)
+
+#=
+
+this uses the same identity:
+
+-logit(exp(x)) = logit(1 - exp(x)) = log((1 - exp(x)) / exp(x)) = log(exp(-x) - 1)
+=#
+
+"""
+$(SIGNATURES)
+
+Return `logit(1 - exp(x))`, computed more carefully and with fewer calls than
+the naive composition of functions.
+
+Its inverse is the [`log1mlogistic`](@ref) function.
+"""
+logit1mexp(x::Real) = logexpm1(-float(x))
