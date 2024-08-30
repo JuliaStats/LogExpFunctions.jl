@@ -1,5 +1,5 @@
 """
-$(SIGNATURES)
+    logsumexp(X)
 
 Compute `log(sum(exp, X))`.
 
@@ -15,7 +15,7 @@ See also [`logsumexp!`](@ref).
 logsumexp(X) = _logsumexp_onepass(X)
 
 """
-$(SIGNATURES)
+    logsumexp(X; dims)
 
 Compute `log.(sum(exp.(X); dims=dims))`.
 
@@ -30,7 +30,7 @@ See also [`logsumexp!`](@ref).
 logsumexp(X::AbstractArray{<:Number}; dims=:) = _logsumexp(X, dims)
 
 """
-$(SIGNATURES)
+    logsumexp!(out, X)
 
 Compute [`logsumexp`](@ref) of `X` over the singleton dimensions of `out`, and write results to `out`.
 

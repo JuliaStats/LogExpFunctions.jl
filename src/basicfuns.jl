@@ -1,6 +1,6 @@
 # scalar functions
 """
-$(SIGNATURES)
+    xlogx(x)
 
 Return `x * log(x)` for `x ≥ 0`, handling ``x = 0`` by taking the downward limit.
 
@@ -15,7 +15,7 @@ function xlogx(x::Number)
 end
 
 """
-$(SIGNATURES)
+    xlogy(x, y)
 
 Return `x * log(y)` for `y > 0` with correct limit at ``x = 0``.
 
@@ -30,7 +30,7 @@ function xlogy(x::Number, y::Number)
 end
 
 """
-$(SIGNATURES)
+    xlog1py(x, y)
 
 Return `x * log(1 + y)` for `y ≥ -1` with correct limit at ``x = 0``.
 
@@ -45,7 +45,7 @@ function xlog1py(x::Number, y::Number)
 end
 
 """
-$(SIGNATURES)
+    xexpx(x)
 
 Return `x * exp(x)` for `x > -Inf`, or zero if `x == -Inf`.
 
@@ -60,7 +60,7 @@ function xexpx(x::Real)
 end
 
 """
-$(SIGNATURES)
+    xexpy(x, y)
 
 Return `x * exp(y)` for `y > -Inf`, or zero if `y == -Inf` or if `x == 0` and `y` is finite.
 
@@ -90,7 +90,7 @@ end
 @inline _logistic_bounds(x::Float64) = (-744.4400719213812, 36.7368005696771)
 
 """
-$(SIGNATURES)
+    logistic(x)
 
 The [logistic](https://en.wikipedia.org/wiki/Logistic_function) sigmoid function mapping a
 real number to a value in the interval ``[0,1]``,
@@ -110,7 +110,7 @@ function logistic(x::Union{Float16, Float32, Float64})
 end
 
 """
-$(SIGNATURES)
+    logit(x)
 
 The [logit](https://en.wikipedia.org/wiki/Logit) or log-odds transformation, defined as
 ```math
@@ -123,7 +123,7 @@ Its inverse is the [`logistic`](@ref) function.
 logit(x::Real) = log(x / (one(x) - x))
 
 """
-$(SIGNATURES)
+    logcosh(x)
 
 Return `log(cosh(x))`, carefully evaluated without intermediate calculation of `cosh(x)`.
 
@@ -135,7 +135,7 @@ function logcosh(x::Real)
 end
 
 """
-$(SIGNATURES)
+    logabssinh(x)
 
 Return `log(abs(sinh(x)))`, carefully evaluated without intermediate calculation of `sinh(x)`.
 
@@ -147,7 +147,7 @@ function logabssinh(x::Real)
 end
 
 """
-$(SIGNATURES)
+    log1psq(x)
 
 Return `log(1+x^2)` evaluated carefully for `abs(x)` very small or very large.
 """
@@ -158,7 +158,7 @@ function log1psq(x::Union{Float32,Float64})
 end
 
 """
-$(SIGNATURES)
+    log1pexp(x)
 
 Return `log(1+exp(x))` evaluated carefully for largish `x`.
 
@@ -222,7 +222,7 @@ each time. Also, _log1pexp_thresholds is not elided by the compiler in Julia 1.0
 @inline _log1pexp_thresholds(::Float16) = (Float16(-17.33), Float16(-7.625), Float16(3.467), Float16(5.86))
 
 """
-$(SIGNATURES)
+    log1mexp(x)
 
 Return `log(1 - exp(x))`
 
@@ -242,14 +242,14 @@ function log1mexp(x::Real)
 end
 
 """
-$(SIGNATURES)
+    log2mexp(x)
 
 Return `log(2 - exp(x))` evaluated as `log1p(-expm1(x))`
 """
 log2mexp(x::Real) = log1p(-_expm1(x))
 
 """
-$(SIGNATURES)
+    logexpm1(x)
 
 Return `log(exp(x) - 1)` or the “invsoftplus” function.  It is the inverse of
 [`log1pexp`](@ref) (aka “softplus”).
@@ -261,7 +261,7 @@ const softplus = log1pexp
 const invsoftplus = logexpm1
 
 """
-$(SIGNATURES)
+    log1pmx(x)
 
 Return `log(1 + x) - x`.
 
@@ -292,7 +292,7 @@ end
 log1pmx(x::Real) = log1p(x) - x
 
 """
-$(SIGNATURES)
+    logmxp1(x)
 
 Return `log(x) - x + 1` carefully evaluated.
 This will fall back to the naive calculation for argument types different from `Float64`.
@@ -342,7 +342,7 @@ end
 
 
 """
-$(SIGNATURES)
+    logaddexp(x, y)
 
 Return `log(exp(x) + exp(y))`, avoiding intermediate overflow/undeflow, and handling
 non-finite values.
@@ -365,7 +365,7 @@ end
 Base.@deprecate logsumexp(x::Real, y::Real) logaddexp(x, y)
 
 """
-$(SIGNATURES)
+    logsubexp(x, y)
 
 Return `log(abs(exp(x) - exp(y)))`, preserving numerical accuracy.
 """
@@ -429,14 +429,14 @@ function _softmax!(r, x, dims)
 end
 
 """
-$(SIGNATURES)
+    cloglog(x)
 
 Compute the complementary log-log, `log(-log(1 - x))`.
 """
 cloglog(x) = log(-log1p(-x))
 
 """
-$(SIGNATURES)
+    cexpexp(x)
 
 Compute the complementary double exponential, `1 - exp(-exp(x))`.
 """
@@ -448,7 +448,7 @@ this uses the identity:
 log(logistic(x)) = -log(1 + exp(-x))
 =#
 """
-$(SIGNATURES)
+    loglogistic(x)
 
 Return `log(logistic(x))`, computed more carefully and with fewer calls
 than the naive composition of functions.
@@ -463,7 +463,7 @@ this uses the identity:
 logit(exp(x)) = log(exp(x) / (1 + exp(x))) = -log(exp(-x) - 1)
 =#
 """
-$(SIGNATURES)
+    logitexp(x)
 
 Return `logit(exp(x))`, computed more carefully and with fewer calls than
 the naive composition of functions.
@@ -481,7 +481,7 @@ that is, negation in the log-odds domain.
 =#
 
 """
-$(SIGNATURES)
+    log1mlogistic(x)
 
 Return `log(1 - logistic(x))`, computed more carefully and with fewer calls than
 the naive composition of functions.
@@ -498,7 +498,7 @@ this uses the same identity:
 =#
 
 """
-$(SIGNATURES)
+    logit1mexp(x)
 
 Return `logit(1 - exp(x))`, computed more carefully and with fewer calls than
 the naive composition of functions.

@@ -1,6 +1,5 @@
 module LogExpFunctions
 
-using DocStringExtensions: SIGNATURES
 using Base: Math.@horner
 
 import IrrationalConstants
