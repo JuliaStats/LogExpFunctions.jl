@@ -170,7 +170,7 @@ transformation (in its default parametrization, see [`softplus`](@ref)), being a
 
 See:
  * Martin Maechler (2012) [“Accurately Computing log(1 − exp(− |a|))”](http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf)
- """
+"""
 log1pexp(x::Real) = _log1pexp(float(x)) # ensures that BigInt/BigFloat, Int/Float64 etc. dispatch to the same algorithm
 
 # Approximations based on Maechler (2012)
