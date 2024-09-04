@@ -260,7 +260,7 @@ Return `log(exp(x) - 1)` or the “invsoftplus” function.  It is the inverse o
 [`log1pexp`](@ref) (aka “softplus”).
 """
 logexpm1(x::Real) = x <= 18.0 ? log(_expm1(x)) : x <= 33.3 ? x - exp(-x) : oftype(exp(-x), x)
-logexpm1(x::Float32) = x <= 9.0f0 ? log(expm1(x)) : x <= 16.0f0 ? x - exp(-x) : oftype(exp(-x), x)
+logexpm1(x::Float32) = x <= 9f0 ? log(expm1(x)) : x <= 16f0 ? x - exp(-x) : oftype(exp(-x), x)
 
 function softplus(x; a::Real=1.0)
     if a == 1.0
