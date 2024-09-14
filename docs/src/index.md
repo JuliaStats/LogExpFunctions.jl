@@ -18,6 +18,8 @@ logcosh
 logabssinh
 log1psq
 log1pexp
+softplus
+invsoftplus
 log1mexp
 log2mexp
 logexpm1
