@@ -22,4 +22,7 @@ InverseFunctions.inverse(::typeof(logitexp)) = loglogistic
 InverseFunctions.inverse(::typeof(log1mlogistic)) = logit1mexp
 InverseFunctions.inverse(::typeof(logit1mexp)) = log1mlogistic
 
+InverseFunctions.inverse(::typeof(softplus)) = invsofplus
+InverseFunctions.inverse(::typeof(invsofplus)) = softplus
+
 end # module

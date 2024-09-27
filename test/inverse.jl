@@ -17,4 +17,7 @@
 
     InverseFunctions.test_inverse(log1mlogistic, randexp())
     InverseFunctions.test_inverse(logit1mexp, -randexp())
+
+    InverseFunctions.test_inverse(softplus, randn())
+    InverseFunctions.test_inverse(invsoftplus, randexp())
 end
