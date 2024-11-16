@@ -154,7 +154,7 @@ Return `log(abs(tanh(x)))`, carefully evaluated without intermediate calculation
 The implementation ensures `logabstanh(-x) = logabstanh(x)`.
 """
 function logabstanh(x::Real)
-    return log1p(-2/((exp(2abs(x))+1)))
+    return log1p(-2/(exp(2*abs(x))+1))
 end
 function logabstanh(x::Float32)
     abs_x = abs(x)
