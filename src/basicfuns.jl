@@ -149,6 +149,31 @@ end
 """
 $(SIGNATURES)
 
+Return `log(abs(tanh(x)))`, carefully evaluated without intermediate calculation of `tanh(x)`.
+
+The implementation ensures `logabstanh(-x) = logabstanh(x)`.
+"""
+function logabstanh(x::Real)
+    return log1p(-2/((exp(2abs(x))+1)))
+end
+function logabstanh(x::Float32)
+    abs_x = abs(x)
+    if abs_x < 0.0625f0
+        return log(abs_x) - x*x*(1f0/3)
+    end
+    return log1p(-2/((exp(2abs_x)+1)))
+end
+function logabstanh(x::Float64)
+    abs_x = abs(x)
+    if abs_x < 0x1p-5
+        return log(abs_x) + evalpoly(x*x, (0, -1/3, 7/90, -62/2835))
+    end
+    return log1p(-2/((exp(2abs_x)+1)))
+end
+
+"""
+$(SIGNATURES)
+
 Return `log(1+x^2)` evaluated carefully for `abs(x)` very small or very large.
 """
 log1psq(x::Real) = log1p(abs2(x))
