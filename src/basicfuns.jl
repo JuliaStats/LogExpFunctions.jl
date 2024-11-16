@@ -168,7 +168,7 @@ function logabstanh(x::Float64)
     if abs_x < 0x1p-5
         return log(abs_x) + evalpoly(x*x, (0, -1/3, 7/90, -62/2835))
     end
-    return log1p(-2/((exp(2abs_x)+1)))
+    return log1p(-2/(exp(2*abs_x)+1))
 end
 
 """
