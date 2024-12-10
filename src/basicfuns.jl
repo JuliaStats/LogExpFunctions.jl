@@ -272,7 +272,6 @@ See:
 """
 softplus(x::Real) = log1pexp(x)
 softplus(x::Real, a::Real) = log1pexp(a * x) / a
-softplus(x::Real; a::Real=1) = softplus(x, a)
 
 """
 $(SIGNATURES)
@@ -281,7 +280,6 @@ The inverse generalized `softplus` function (Wiemann et al., 2024). See [`softpl
 """
 invsoftplus(y::Real) = logexpm1(y)
 invsoftplus(y::Real, a::Real) = logexpm1(a * y) / a
-invsoftplus(y::Real; a::Real=1) = invsoftplus(y, a)
 
 
 """

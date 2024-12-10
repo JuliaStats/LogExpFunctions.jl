@@ -164,10 +164,8 @@ end
 @testset "softplus" begin
     @test softplus(2) ≈ log1pexp(2)
     @test softplus(2, 1) ≈ log1pexp(2)
-    @test softplus(2, a=1) ≈ log1pexp(2)
     @test softplus(2, 10) < log1pexp(2)
     @test invsoftplus(softplus(2), 1) ≈ 2
-    @test invsoftplus(softplus(2, 10), a=10) ≈ 2
 end
 
 
