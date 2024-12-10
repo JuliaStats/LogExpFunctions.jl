@@ -162,12 +162,14 @@ end
 end
 
 @testset "softplus" begin
-    @test softplus(2) ≈ log1pexp(2)
-    @test softplus(2, 1) ≈ log1pexp(2)
-    @test softplus(2, 10) < log1pexp(2)
-    @test invsoftplus(softplus(2), 1) ≈ 2
+    for T in (Int, Float64, Float32, Float16)
+        @test @inferred(softplus(T(2))) === log1pexp(T(2))
+        @test @inferred(softplus(T(2), 1)) isa float(T)
+        @test @inferred(softplus(T(2), 1)) ≈ softplus(T(2))
+        @test @inferred(softplus(T(2), 5)) ≈ softplus(5 * T(2)) / 5
+        @test @inferred(softplus(T(2), 10)) ≈ softplus(10 * T(2)) / 10
+    end
 end
-
 
 @testset "log1mexp" begin
     for T in (Float64, Float32, Float16)
@@ -191,6 +193,16 @@ end
         @test logexpm1(T(2))            ≈  log(exp(T(2)) - 1)
         @test logexpm1(log1pexp(T(2)))  ≈  T(2)
         @test logexpm1(log1pexp(-T(2))) ≈ -T(2)
+    end
+end
+
+@testset "invsoftplus" begin
+    for T in (Int, Float64, Float32, Float16)
+        @test @inferred(invsoftplus(T(2))) === logexpm1(T(2))
+        @test @inferred(invsoftplus(T(2), 1)) isa float(T)
+        @test @inferred(invsoftplus(T(2), 1)) ≈ invsoftplus(T(2))
+        @test @inferred(invsoftplus(T(2), 5)) ≈ invsoftplus(5 * T(2)) / 5
+        @test @inferred(invsoftplus(T(2), 10)) ≈ invsoftplus(10 * T(2)) / 10
     end
 end
 
