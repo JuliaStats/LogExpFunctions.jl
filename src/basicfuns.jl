@@ -165,6 +165,9 @@ Return `log(1+exp(x))` evaluated carefully for largish `x`.
 This is also called the ["softplus"](https://en.wikipedia.org/wiki/Rectifier_(neural_networks))
 transformation, being a smooth approximation to `max(0,x)`. Its inverse is [`logexpm1`](@ref).
 
+This is also called the ["softplus"](https://en.wikipedia.org/wiki/Rectifier_(neural_networks))
+transformation (in its default parametrization, see [`softplus`](@ref)), being a smooth approximation to `max(0,x)`. 
+
 See:
  * Martin Maechler (2012) [“Accurately Computing log(1 − exp(− |a|))”](http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf)
 """
@@ -257,8 +260,27 @@ Return `log(exp(x) - 1)` or the “invsoftplus” function.  It is the inverse o
 logexpm1(x::Real) = x <= 18.0 ? log(_expm1(x)) : x <= 33.3 ? x - exp(-x) : oftype(exp(-x), x)
 logexpm1(x::Float32) = x <= 9f0 ? log(expm1(x)) : x <= 16f0 ? x - exp(-x) : oftype(exp(-x), x)
 
-const softplus = log1pexp
-const invsoftplus = logexpm1
+"""
+$(SIGNATURES)
+
+The generalized `softplus` function (Wiemann et al., 2024) takes an additional optional parameter `a` that control 
+the approximation error with respect to the linear spline. It defaults to `a=1.0`, in which case the softplus is 
+equivalent to [`log1pexp`](@ref).
+
+See:
+ * Wiemann, P. F., Kneib, T., & Hambuckers, J. (2024). Using the softplus function to construct alternative link functions in generalized linear models and beyond. Statistical Papers, 65(5), 3155-3180.
+"""
+softplus(x::Real) = log1pexp(x)
+softplus(x::Real, a::Real) = log1pexp(a * x) / a
+
+"""
+$(SIGNATURES)
+
+The inverse generalized `softplus` function (Wiemann et al., 2024). See [`softplus`](@ref).
+"""
+invsoftplus(y::Real) = logexpm1(y)
+invsoftplus(y::Real, a::Real) = logexpm1(a * y) / a
+
 
 """
 $(SIGNATURES)

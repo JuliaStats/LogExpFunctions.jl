@@ -8,10 +8,24 @@ function ChangesOfVariables.with_logabsdet_jacobian(::typeof(log1pexp), x::Real)
     y = log1pexp(x)
     return y, x - y
 end
+function ChangesOfVariables.with_logabsdet_jacobian(::typeof(softplus), x::Real)
+    return ChangesOfVariables.with_logabsdet_jacobian(log1pexp, x)
+end
+function ChangesOfVariables.with_logabsdet_jacobian(f::Base.Fix2{typeof(softplus),<:Real}, x::Real)
+    y = f(x)
+    return y, f.x * (x - y)
+end
 
 function ChangesOfVariables.with_logabsdet_jacobian(::typeof(logexpm1), x::Real)
     y = logexpm1(x)
     return y, x - y
+end
+function ChangesOfVariables.with_logabsdet_jacobian(::typeof(invsoftplus), x::Real)
+    return ChangesOfVariables.with_logabsdet_jacobian(logexpm1, x)
+end
+function ChangesOfVariables.with_logabsdet_jacobian(f::Base.Fix2{typeof(invsoftplus),<:Real}, x::Real)
+    y = f(x)
+    return y, f.x * (x - y)
 end
 
 function ChangesOfVariables.with_logabsdet_jacobian(::typeof(log1mexp), x::Real)
