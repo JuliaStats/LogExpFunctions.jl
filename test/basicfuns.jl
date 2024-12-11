@@ -468,7 +468,7 @@ end
             @test cloglog(T(x)) ≈ cloglog_big(T(x))
             # Julia bug for Float32 and Float16 initially introduced in https://github.com/JuliaLang/julia/pull/37440
             # and fixed in https://github.com/JuliaLang/julia/pull/50989
-            if T === Float64 || VERSION < v"1.7.0-DEV.887" || VERSION >= v"1.11.0-DEV.310"
+            if T === Float64 || VERSION >= v"1.11.0-DEV.310"
                 @test cexpexp(T(x)) ≈ cexpexp_big(T(x))
             end
         end

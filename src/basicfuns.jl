@@ -240,7 +240,7 @@ function log1mexp(x::Real)
     if x < oftype(float(x), IrrationalConstants.loghalf)
         return log1p(-exp(x))
     else
-        return log(-_expm1(x))
+        return log(-expm1(x))
     end
 end
 
@@ -249,7 +249,7 @@ $(SIGNATURES)
 
 Return `log(2 - exp(x))` evaluated as `log1p(-expm1(x))`
 """
-log2mexp(x::Real) = log1p(-_expm1(x))
+log2mexp(x::Real) = log1p(-expm1(x))
 
 """
 $(SIGNATURES)
@@ -257,7 +257,7 @@ $(SIGNATURES)
 Return `log(exp(x) - 1)` or the “invsoftplus” function.  It is the inverse of
 [`log1pexp`](@ref) (aka “softplus”).
 """
-logexpm1(x::Real) = x <= 18.0 ? log(_expm1(x)) : x <= 33.3 ? x - exp(-x) : oftype(exp(-x), x)
+logexpm1(x::Real) = x <= 18.0 ? log(expm1(x)) : x <= 33.3 ? x - exp(-x) : oftype(exp(-x), x)
 logexpm1(x::Float32) = x <= 9f0 ? log(expm1(x)) : x <= 16f0 ? x - exp(-x) : oftype(exp(-x), x)
 
 """
@@ -462,7 +462,7 @@ $(SIGNATURES)
 
 Compute the complementary double exponential, `1 - exp(-exp(x))`.
 """
-cexpexp(x) = -_expm1(-exp(x))
+cexpexp(x) = -expm1(-exp(x))
 
 #=
 this uses the identity:

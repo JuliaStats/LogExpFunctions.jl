@@ -11,16 +11,6 @@ export xlogx, xlogy, xlog1py, xexpx, xexpy, logistic, logit, log1psq, log1pexp, 
     softmax!, logcosh, logabssinh, cloglog, cexpexp,
     loglogistic, logitexp, log1mlogistic, logit1mexp
 
-# expm1(::Float16) is not defined in older Julia versions,
-# hence for better Float16 support we use an internal function instead
-# https://github.com/JuliaLang/julia/pull/40867
-if VERSION < v"1.7.0-DEV.1172"
-    _expm1(x) = expm1(x)
-    _expm1(x::Float16) = Float16(expm1(Float32(x)))
-else
-    const _expm1 = expm1
-end
-
 include("basicfuns.jl")
 include("logsumexp.jl")
 
