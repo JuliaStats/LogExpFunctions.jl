@@ -11,7 +11,6 @@ makedocs(;
     sitename="LogExpFunctions.jl",
     pages=Any["index.md"],
     checkdocs=:exports,
-    strict=true,
 )
 
 deploydocs(; repo="github.com/JuliaStats/LogExpFunctions.jl.git")
