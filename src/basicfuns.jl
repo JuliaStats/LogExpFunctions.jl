@@ -292,8 +292,8 @@ This will fall back to the naive calculation for argument types different from `
 """
 log1pmx(x::Real) = log1p(x) - x # Naive fallback
 
-function log1pmx(x::Union{Float32, Float64})
-    if !(-0.425 < x < 0.4) # accurate within 2 ULPs when log2(abs(log1p(x))) > 1.5
+function log1pmx(x::T) where T <: Union{Float32, Float64}
+    if !(T(-0.425) < x < T(0.4)) # accurate within 2 ULPs when log2(abs(log1p(x))) > 1.5
         return log1p(x) - x
     else
         return _log1pmx_ker(x)
