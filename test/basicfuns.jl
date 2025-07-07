@@ -216,7 +216,8 @@ end
     @test log1pmx(2f0) ≈ log(3f0) - 2f0
 
     for x in -0.5:0.1:10
-        @test log1pmx(Float32(x)) ≈ Float32(log1pmx(x))
+        @test log1pmx(Float32(x)) ≈ Float32(log1pmx(x)) atol=3*eps(Float32(x))
+        @test log1pmx(x) ≈ Float64(log1pmx(big(x))) atol=3*eps(x)
     end
 end
 

@@ -352,6 +352,7 @@ function _log1pmx_ker(x::T) where T <: Union{Float32, Float64}
              0.1337701340211177,
              0.11201972567415432,
              0.143418239946679)
+    end
     w = evalpoly(t, p)
     hxsq = x*x/2
     muladd(r, muladd(w, t, hxsq), -hxsq)
