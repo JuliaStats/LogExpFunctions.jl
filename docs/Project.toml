@@ -4,4 +4,3 @@ LogExpFunctions = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
 
 [compat]
 Documenter = "1"
-LogExpFunctions = "0.3"
