@@ -114,6 +114,9 @@ _logsumexp_onepass_op((xmax, r)::Tuple{<:Number,<:Number}, x::Number) =
 _logsumexp_onepass_op(x::Number, xmax::Number, r::Number) =
     _logsumexp_onepass_op(promote(x, xmax)..., r)
 function _logsumexp_onepass_op(x::T, xmax::T, r::Number) where {T<:Number}
+    # The following invariants are maintained through the reduction:
+    # `xmax` is the maximum of the elements encountered so far,
+    # ``r = ∑ᵢ exp(xᵢ - xmax)`` over the same elements.
     _xmax, _r = if isnan(x) || isnan(xmax)
         # ensure that `NaN` is propagated correctly for complex numbers
         z = oftype(x, NaN)
@@ -121,14 +124,13 @@ function _logsumexp_onepass_op(x::T, xmax::T, r::Number) where {T<:Number}
     else
         real_x = real(x)
         real_xmax = real(xmax)
-        if real_x > real_xmax
-            x, (r + one(r)) * exp(xmax - x)
-        elseif real_x < real_xmax
-            xmax, r + exp(x - xmax)
-        else
-            # handle `x = xmax = ±Inf` correctly
-            # checking inequalities above instead of equality fixes issue #59
+        if isinf(real_x) && isinf(real_xmax) && (real_x * real_xmax) > 0
+            # handle `x = xmax = ±Inf` correctly, without relying on ForwardDiff.value
             xmax, r + exp(zero(x - xmax))
+        elseif real_x > real_xmax
+            x, (r + one(r)) * exp(xmax - x)
+        else
+            xmax, r + exp(x - xmax)
         end
     end
     return _xmax, _r
