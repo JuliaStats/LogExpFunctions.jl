@@ -120,7 +120,13 @@ for ``0 < x < 1``.
 
 Its inverse is the [`logistic`](@ref) function.
 """
-logit(x::Real) = log(x / (one(x) - x))
+function logit(x::Real)
+    if 4 * x < 1
+        -log(inv(x) - 1)
+    else
+        2 * atanh(2*x - 1)
+    end
+end
 
 """
 $(SIGNATURES)
