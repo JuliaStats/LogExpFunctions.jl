@@ -10,6 +10,9 @@ using OffsetArrays
 using Random
 using Test
 
+include("common/ULPError.jl")
+using .ULPError
+
 Random.seed!(1234)
 
 include("basicfuns.jl")

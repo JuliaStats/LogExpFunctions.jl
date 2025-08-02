@@ -86,6 +86,13 @@ end
     @test logistic(+750.0) === 1.0
     @test iszero(logit(0.5))
     @test logit(logistic(2)) ≈ 2.0
+    @testset "accuracy of `logit`" begin
+        for t in (Float16, Float32, Float64)
+            for x in range(start = t(0), stop = t(1), length = 500)
+                @test 2 * ulp_error(logit, x) < 3
+            end
+        end
+    end
 end
 
 @testset "logcosh and logabssinh" begin
