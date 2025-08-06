@@ -247,7 +247,7 @@ end
 """
 $(SIGNATURES)
 
-Return `log(2 - exp(x))` evaluated as `log1p(-expm1(x))`
+Return `log(2 - exp(x))` evaluated carefully.
 """
 log2mexp(x::Real) = log1p(-expm1(x))
 
