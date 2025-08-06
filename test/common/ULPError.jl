@@ -1,32 +1,27 @@
 module ULPError
     export ulp_error, ulp_error_maximum
-    @noinline function throw_invalid()
-        throw(ArgumentError("invalid"))
-    end
     function ulp_error(accurate::AbstractFloat, approximate::AbstractFloat)
         # the ULP error is usually not required to great accuracy, so `Float32` should be precise enough
-        zero_return = Float32(0)
-        inf_return = Float32(Inf)
-        let accur_is_nan = isnan(accurate), approx_is_nan = isnan(approximate)
+        zero_return = 0f0
+        inf_return = Inf32
+        # handle floating-point edge cases
+        if !(isfinite(accurate) && isfinite(approximate))
+            accur_is_nan = isnan(accurate)
+            approx_is_nan = isnan(approximate)
             if accur_is_nan || approx_is_nan
-                if accur_is_nan === approx_is_nan
-                    return zero_return
+                return if accur_is_nan === approx_is_nan
+                    zero_return
+                else
+                    inf_return
                 end
-                return inf_return
             end
-        end
-        if isinf(accurate) || iszero(accurate)  # handle floating-point edge cases
-            if isinf(accurate)
-                if isinf(approximate) && (signbit(accurate) == signbit(approximate))
-                    return zero_return
+            if isinf(approximate)
+                return if isinf(accurate) && (signbit(accurate) == signbit(approximate))
+                    zero_return
+                else
+                    inf_return
                 end
-                return inf_return
             end
-            # `iszero(accurate)`
-            if iszero(approximate)
-                return zero_return
-            end
-            return inf_return
         end
         # assuming `precision(BigFloat)` is great enough
         acc = if accurate isa BigFloat
@@ -34,11 +29,7 @@ module ULPError
         else
             BigFloat(accurate)::BigFloat
         end
-        err = abs(Float32((approximate - acc) / eps(approximate))::Float32)
-        if isnan(err)
-            @noinline throw_invalid()  # unexpected
-        end
-        err
+        abs(Float32((approximate - acc) / eps(approximate))::Float32)
     end
     function ulp_error(accurate::Acc, approximate::App, x::AbstractFloat) where {Acc, App}
         acc = accurate(x)
