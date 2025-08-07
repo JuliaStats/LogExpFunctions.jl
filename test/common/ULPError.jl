@@ -23,11 +23,11 @@ module ULPError
                 end
             end
         end
-        # assuming `precision(BigFloat)` is great enough
-        acc = if accurate isa BigFloat
-            accurate
+        acc = if accurate isa Union{Float16, Float32}
+            # widen for better accuracy when doing so does not impact performance too much
+            widen(accurate)
         else
-            BigFloat(accurate)::BigFloat
+            accurate
         end
         abs(Float32((approximate - acc) / eps(approximate))::Float32)
     end
