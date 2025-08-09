@@ -110,9 +110,7 @@ end
 
     @testset "accuracy of `logcosh`" begin
         for t in (Float32, Float64)
-            for x in range(start = t(-3), stop = t(3), length = 1000)
-                @test ulp_error(logcosh, x) < 3
-            end
+            @test ulp_error_maximum(logcosh, range(start = t(-3), stop = t(3), length = 1000)) < 3
         end
     end
 end
