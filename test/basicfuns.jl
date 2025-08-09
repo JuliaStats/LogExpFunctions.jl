@@ -88,9 +88,7 @@ end
     @test logit(logistic(2)) ≈ 2.0
     @testset "accuracy of `logit`" begin
         for t in (Float16, Float32, Float64)
-            for x in range(start = t(0), stop = t(1), length = 500)
-                @test 2 * ulp_error(logit, x) < 3
-            end
+            @test 2 * ulp_error_maximum(logit, range(start = t(0), stop = t(1), length = 500)) < 3
         end
     end
 end
