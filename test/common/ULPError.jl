@@ -34,7 +34,7 @@ function ulp_error(accurate::AbstractFloat, approximate::AbstractFloat)
     abs(Float32((approximate - acc) / eps(approximate))::Float32)
 end
 
-function ulp_error(accurate::Acc, approximate::App, x::AbstractFloat) where {Acc, App}
+function ulp_error(accurate, approximate, x::AbstractFloat)
     acc = accurate(x)
     app = approximate(x)
     ulp_error(acc, app)
