@@ -131,7 +131,7 @@ The implementation ensures `logcosh(-x) = logcosh(x)`.
 """
 function logcosh(x::Real)
     abs_x = abs(x)
-    if (x isa Union{Float32, Float64}) && (abs_x < oftype(x, 0.7373046875))
+    if (x isa Union{Float16, Float32, Float64}) && (abs_x < oftype(x, 0.7373046875))
         return logcosh_ker(x)
     end
     return abs_x + log1pexp(- 2 * abs_x) - IrrationalConstants.logtwo
@@ -150,17 +150,26 @@ points = 50001!;
 accurate = log(cosh(x));
 domain = [-0.125, 0.7373046875];
 constrained_part = (x^2) / 2;
+free_monomials_16 = [|4, 6|];
 free_monomials_32 = [|4, 6, 8, 10, 12|];
 free_monomials_64 = [|4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24|];
+polynomial_16 = fpminimax(accurate, free_monomials_16, [|halfprecision...|], domain, constrained_part);
 polynomial_32 = fpminimax(accurate, free_monomials_32, [|single...|], domain, constrained_part);
 polynomial_64 = fpminimax(accurate, free_monomials_64, [|double...|], domain, constrained_part);
+polynomial_16;
 polynomial_32;
 polynomial_64;
 ```
 """
-function logcosh_ker(x::Union{Float32, Float64})
+function logcosh_ker(x::Union{Float16, Float32, Float64})
     x² = x * x
-    if x isa Float32
+    if x isa Float16
+        p = (
+            Float16(5f-1),
+            Float16(-0.08264),
+            Float16(0.01793),
+        )
+    elseif x isa Float32
         p = (
             5f-1,
             -0.083333164f0,
