@@ -225,20 +225,6 @@ The implementation ensures `logabstanh(-x) = logabstanh(x)`.
 function logabstanh(x::Real)
     return log1p(-2/(exp(2*abs(x))+1))
 end
-function logabstanh(x::Float32)
-    abs_x = abs(x)
-    if abs_x < 0.0625f0
-        return log(abs_x) - x^2/3
-    end
-    return log1p(-2/(exp(2*abs_x)+1))
-end
-function logabstanh(x::Float64)
-    abs_x = abs(x)
-    if abs_x < 0x1p-5
-        return log(abs_x) + evalpoly(x*x, (0, -1/3, 7/90, -62/2835))
-    end
-    return log1p(-2/(exp(2*abs_x)+1))
-end
 
 """
 $(SIGNATURES)
