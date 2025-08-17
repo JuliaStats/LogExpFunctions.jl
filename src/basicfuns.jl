@@ -131,7 +131,70 @@ The implementation ensures `logcosh(-x) = logcosh(x)`.
 """
 function logcosh(x::Real)
     abs_x = abs(x)
+    if (x isa Union{Float16, Float32, Float64}) && (abs_x < oftype(x, 0.7373046875))
+        return logcosh_ker(x)
+    end
     return abs_x + log1pexp(- 2 * abs_x) - IrrationalConstants.logtwo
+end
+
+"""
+    logcosh_ker(x::Union{Float32, Float64})
+
+The kernel of `logcosh`.
+
+The polynomial coefficients were found using Sollya:
+
+```sollya
+prec = 500!;
+points = 50001!;
+accurate = log(cosh(x));
+domain = [-0.125, 0.7373046875];
+constrained_part = (x^2) / 2;
+free_monomials_16 = [|4, 6|];
+free_monomials_32 = [|4, 6, 8, 10, 12|];
+free_monomials_64 = [|4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24|];
+polynomial_16 = fpminimax(accurate, free_monomials_16, [|halfprecision...|], domain, constrained_part);
+polynomial_32 = fpminimax(accurate, free_monomials_32, [|single...|], domain, constrained_part);
+polynomial_64 = fpminimax(accurate, free_monomials_64, [|double...|], domain, constrained_part);
+polynomial_16;
+polynomial_32;
+polynomial_64;
+```
+"""
+function logcosh_ker(x::Union{Float16, Float32, Float64})
+    x² = x * x
+    if x isa Float16
+        p = (
+            Float16(5f-1),
+            Float16(-0.08264),
+            Float16(0.01793),
+        )
+    elseif x isa Float32
+        p = (
+            5f-1,
+            -0.083333164f0,
+            0.022217678f0,
+            -0.0067060017f0,
+            0.0020296266f0,
+            -0.00044135848f0,
+        )
+    elseif x isa Float64
+        p = (
+            5e-1,
+            -0.08333333333332801,
+            0.02222222222164912,
+            -0.0067460317245250445,
+            0.0021869484500251714,
+            -0.0007385985435311435,
+            0.0002565500026777061,
+            -9.084985367586575e-5,
+            3.2348259905568986e-5,
+            -1.1058814347469105e-5,
+            3.16293199955507e-6,
+            -5.312230207322749e-7,
+        )
+    end
+    evalpoly(x², p) * x²
 end
 
 """

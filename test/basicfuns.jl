@@ -107,6 +107,12 @@ end
         @test @inferred(logcosh(x)) === x
         @test @inferred(logabssinh(x)) === x
     end
+
+    @testset "accuracy of `logcosh`" begin
+        for t in (Float16, Float32, Float64)
+            @test ulp_error_maximum(logcosh, range(start = t(-3), stop = t(3), length = 1000)) < 3
+        end
+    end
 end
 
 @testset "log1psq" begin
