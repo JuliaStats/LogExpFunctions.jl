@@ -218,7 +218,7 @@ end
 """
 $(SIGNATURES)
 
-Return `log(abs(tanh(x)))`, carefully evaluated without intermediate calculation of `tanh(x)`.
+Return `log(abs(tanh(x)))`, evaluated carefully.
 
 The implementation ensures `logabstanh(-x) = logabstanh(x)`.
 """
