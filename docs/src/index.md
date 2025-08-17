@@ -16,6 +16,7 @@ logistic
 logit
 logcosh
 logabssinh
+logabstanh
 log1psq
 log1pexp
 softplus
