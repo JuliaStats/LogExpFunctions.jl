@@ -86,6 +86,11 @@ end
     @test logistic(+750.0) === 1.0
     @test iszero(logit(0.5))
     @test logit(logistic(2)) ≈ 2.0
+    @testset "accuracy of `logit`" begin
+        for t in (Float16, Float32, Float64)
+            @test 2 * ulp_error_maximum(logit, range(start = t(0), stop = t(1), length = 500)) < 3
+        end
+    end
 end
 
 @testset "logcosh and logabssinh" begin
@@ -106,6 +111,12 @@ end
     for x in (NaN, NaN32)
         @test @inferred(logcosh(x)) === x
         @test @inferred(logabssinh(x)) === x
+    end
+
+    @testset "accuracy of `logcosh`" begin
+        for t in (Float16, Float32, Float64)
+            @test ulp_error_maximum(logcosh, range(start = t(-3), stop = t(3), length = 1000)) < 3
+        end
     end
 end
 
@@ -161,6 +172,16 @@ end
     end
 end
 
+@testset "softplus" begin
+    for T in (Int, Float64, Float32, Float16)
+        @test @inferred(softplus(T(2))) === log1pexp(T(2))
+        @test @inferred(softplus(T(2), 1)) isa float(T)
+        @test @inferred(softplus(T(2), 1)) ≈ softplus(T(2))
+        @test @inferred(softplus(T(2), 5)) ≈ softplus(5 * T(2)) / 5
+        @test @inferred(softplus(T(2), 10)) ≈ softplus(10 * T(2)) / 10
+    end
+end
+
 @testset "log1mexp" begin
     for T in (Float64, Float32, Float16)
         @test @inferred(log1mexp(-T(1))) isa T
@@ -186,6 +207,16 @@ end
     end
 end
 
+@testset "invsoftplus" begin
+    for T in (Int, Float64, Float32, Float16)
+        @test @inferred(invsoftplus(T(2))) === logexpm1(T(2))
+        @test @inferred(invsoftplus(T(2), 1)) isa float(T)
+        @test @inferred(invsoftplus(T(2), 1)) ≈ invsoftplus(T(2))
+        @test @inferred(invsoftplus(T(2), 5)) ≈ invsoftplus(5 * T(2)) / 5
+        @test @inferred(invsoftplus(T(2), 10)) ≈ invsoftplus(10 * T(2)) / 10
+    end
+end
+
 @testset "log1pmx" begin
     @test iszero(log1pmx(0.0))
     @test log1pmx(1.0) ≈ log(2.0) - 1.0
@@ -196,7 +227,8 @@ end
     @test log1pmx(2f0) ≈ log(3f0) - 2f0
 
     for x in -0.5:0.1:10
-        @test log1pmx(Float32(x)) ≈ Float32(log1pmx(x))
+        @test log1pmx(Float32(x)) ≈ Float32(log1pmx(x)) atol=3*eps(Float32(x))
+        @test log1pmx(x) ≈ Float64(log1pmx(big(x))) atol=3*eps(x)
     end
 end
 
@@ -448,7 +480,7 @@ end
             @test cloglog(T(x)) ≈ cloglog_big(T(x))
             # Julia bug for Float32 and Float16 initially introduced in https://github.com/JuliaLang/julia/pull/37440
             # and fixed in https://github.com/JuliaLang/julia/pull/50989
-            if T === Float64 || VERSION < v"1.7.0-DEV.887" || VERSION >= v"1.11.0-DEV.310"
+            if T === Float64 || VERSION >= v"1.11.0-DEV.310"
                 @test cexpexp(T(x)) ≈ cexpexp_big(T(x))
             end
         end

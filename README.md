@@ -1,7 +1,7 @@
 # LogExpFunctions.jl
 
 [![CI](https://github.com/JuliaStats/LogExpFunctions.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/JuliaStats/LogExpFunctions.jl/actions/workflows/CI.yml?query=branch%3Amaster)
-[![codecov.io](http://codecov.io/github/JuliaStats/LogExpFunctions.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaStats/LogExpFunctions.jl?branch=master)
+[![codecov](https://codecov.io/github/JuliaStats/LogExpFunctions.jl/graph/badge.svg?token=Xy6h2fIcHB)](https://codecov.io/github/JuliaStats/LogExpFunctions.jl)
 [![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://juliastats.github.io/LogExpFunctions.jl/stable)
 [![Documentation](https://img.shields.io/badge/docs-master-blue.svg)](https://juliastats.github.io/LogExpFunctions.jl/dev)
 

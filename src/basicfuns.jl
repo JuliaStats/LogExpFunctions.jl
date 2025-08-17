@@ -120,7 +120,13 @@ for ``0 < x < 1``.
 
 Its inverse is the [`logistic`](@ref) function.
 """
-logit(x::Real) = log(x / (one(x) - x))
+function logit(x::Real)
+    if 4 * x < 1
+        -log(inv(x) - 1)
+    else
+        2 * atanh(2*x - 1)
+    end
+end
 
 """
 $(SIGNATURES)
@@ -131,7 +137,70 @@ The implementation ensures `logcosh(-x) = logcosh(x)`.
 """
 function logcosh(x::Real)
     abs_x = abs(x)
+    if (x isa Union{Float16, Float32, Float64}) && (abs_x < oftype(x, 0.7373046875))
+        return logcosh_ker(x)
+    end
     return abs_x + log1pexp(- 2 * abs_x) - IrrationalConstants.logtwo
+end
+
+"""
+    logcosh_ker(x::Union{Float32, Float64})
+
+The kernel of `logcosh`.
+
+The polynomial coefficients were found using Sollya:
+
+```sollya
+prec = 500!;
+points = 50001!;
+accurate = log(cosh(x));
+domain = [-0.125, 0.7373046875];
+constrained_part = (x^2) / 2;
+free_monomials_16 = [|4, 6|];
+free_monomials_32 = [|4, 6, 8, 10, 12|];
+free_monomials_64 = [|4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24|];
+polynomial_16 = fpminimax(accurate, free_monomials_16, [|halfprecision...|], domain, constrained_part);
+polynomial_32 = fpminimax(accurate, free_monomials_32, [|single...|], domain, constrained_part);
+polynomial_64 = fpminimax(accurate, free_monomials_64, [|double...|], domain, constrained_part);
+polynomial_16;
+polynomial_32;
+polynomial_64;
+```
+"""
+function logcosh_ker(x::Union{Float16, Float32, Float64})
+    x² = x * x
+    if x isa Float16
+        p = (
+            Float16(5f-1),
+            Float16(-0.08264),
+            Float16(0.01793),
+        )
+    elseif x isa Float32
+        p = (
+            5f-1,
+            -0.083333164f0,
+            0.022217678f0,
+            -0.0067060017f0,
+            0.0020296266f0,
+            -0.00044135848f0,
+        )
+    elseif x isa Float64
+        p = (
+            5e-1,
+            -0.08333333333332801,
+            0.02222222222164912,
+            -0.0067460317245250445,
+            0.0021869484500251714,
+            -0.0007385985435311435,
+            0.0002565500026777061,
+            -9.084985367586575e-5,
+            3.2348259905568986e-5,
+            -1.1058814347469105e-5,
+            3.16293199955507e-6,
+            -5.312230207322749e-7,
+        )
+    end
+    evalpoly(x², p) * x²
 end
 
 """
@@ -189,6 +258,9 @@ Return `log(1+exp(x))` evaluated carefully for largish `x`.
 
 This is also called the ["softplus"](https://en.wikipedia.org/wiki/Rectifier_(neural_networks))
 transformation, being a smooth approximation to `max(0,x)`. Its inverse is [`logexpm1`](@ref).
+
+This is also called the ["softplus"](https://en.wikipedia.org/wiki/Rectifier_(neural_networks))
+transformation (in its default parametrization, see [`softplus`](@ref)), being a smooth approximation to `max(0,x)`. 
 
 See:
  * Martin Maechler (2012) [“Accurately Computing log(1 − exp(− |a|))”](http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf)
@@ -262,16 +334,16 @@ function log1mexp(x::Real)
     if x < oftype(float(x), IrrationalConstants.loghalf)
         return log1p(-exp(x))
     else
-        return log(-_expm1(x))
+        return log(-expm1(x))
     end
 end
 
 """
 $(SIGNATURES)
 
-Return `log(2 - exp(x))` evaluated as `log1p(-expm1(x))`
+Return `log(2 - exp(x))` evaluated carefully.
 """
-log2mexp(x::Real) = log1p(-_expm1(x))
+log2mexp(x::Real) = log1p(-expm1(x))
 
 """
 $(SIGNATURES)
@@ -279,11 +351,30 @@ $(SIGNATURES)
 Return `log(exp(x) - 1)` or the “invsoftplus” function.  It is the inverse of
 [`log1pexp`](@ref) (aka “softplus”).
 """
-logexpm1(x::Real) = x <= 18.0 ? log(_expm1(x)) : x <= 33.3 ? x - exp(-x) : oftype(exp(-x), x)
+logexpm1(x::Real) = x <= 18.0 ? log(expm1(x)) : x <= 33.3 ? x - exp(-x) : oftype(exp(-x), x)
 logexpm1(x::Float32) = x <= 9f0 ? log(expm1(x)) : x <= 16f0 ? x - exp(-x) : oftype(exp(-x), x)
 
-const softplus = log1pexp
-const invsoftplus = logexpm1
+"""
+$(SIGNATURES)
+
+The generalized `softplus` function (Wiemann et al., 2024) takes an additional optional parameter `a` that control 
+the approximation error with respect to the linear spline. It defaults to `a=1.0`, in which case the softplus is 
+equivalent to [`log1pexp`](@ref).
+
+See:
+ * Wiemann, P. F., Kneib, T., & Hambuckers, J. (2024). Using the softplus function to construct alternative link functions in generalized linear models and beyond. Statistical Papers, 65(5), 3155-3180.
+"""
+softplus(x::Real) = log1pexp(x)
+softplus(x::Real, a::Real) = log1pexp(a * x) / a
+
+"""
+$(SIGNATURES)
+
+The inverse generalized `softplus` function (Wiemann et al., 2024). See [`softplus`](@ref).
+"""
+invsoftplus(y::Real) = logexpm1(y)
+invsoftplus(y::Real, a::Real) = logexpm1(a * y) / a
+
 
 """
 $(SIGNATURES)
@@ -291,30 +382,17 @@ $(SIGNATURES)
 Return `log(1 + x) - x`.
 
 Use naive calculation or range reduction outside kernel range.  Accurate ~2ulps for all `x`.
-This will fall back to the naive calculation for argument types different from `Float64`.
+This will fall back to the naive calculation for argument types different from `Float32, Float64`.
 """
-function log1pmx(x::Float64)
-    if !(-0.7 < x < 0.9)
+log1pmx(x::Real) = log1p(x) - x # Naive fallback
+
+function log1pmx(x::T) where T <: Union{Float32, Float64}
+    if !(T(-0.425) < x < T(0.4)) # accurate within 2 ULPs when log2(abs(log1p(x))) > 1.5
         return log1p(x) - x
-    elseif x > 0.315
-        u = (x-0.5)/1.5
-        return _log1pmx_ker(u) - 9.45348918918356180e-2 - 0.5*u
-    elseif x > -0.227
-        return _log1pmx_ker(x)
-    elseif x > -0.4
-        u = (x+0.25)/0.75
-        return _log1pmx_ker(u) - 3.76820724517809274e-2 + 0.25*u
-    elseif x > -0.6
-        u = (x+0.5)*2.0
-        return _log1pmx_ker(u) - 1.93147180559945309e-1 + 0.5*u
     else
-        u = (x+0.625)/0.375
-        return _log1pmx_ker(u) - 3.55829253011726237e-1 + 0.625*u
+        return _log1pmx_ker(x)
     end
 end
-
-# Naive fallback
-log1pmx(x::Real) = log1p(x) - x
 
 """
 $(SIGNATURES)
@@ -348,21 +426,32 @@ function logmxp1(x::Real)
 end
 
 # The kernel of log1pmx
-# Accuracy within ~2ulps for -0.227 < x < 0.315
-function _log1pmx_ker(x::Float64)
-    r = x/(x+2.0)
+# Accuracy within ~2ulps -0.227 < x < 0.315 for Float64
+# Accuracy <2.18ulps -0.425 < x < 0.425 for Float32
+# parameters foudn via Remez.jl, specifically:
+# g(x) = evalpoly(x, big(2)./ntuple(i->2i+1, 50))
+# p = T.(Tuple(ratfn_minimax(g, (1e-3, (.425/(.425+2))^2), 8, 0)[1]))
+# A closed form for the Taylor series, after a variable change, is
+# 2 * (atanh(x) - x) / x^3
+function _log1pmx_ker(x::T) where T <: Union{Float32, Float64}
+    r = x / (x+2)
     t = r*r
-    w = @horner(t,
-                6.66666666666666667e-1, # 2/3
-                4.00000000000000000e-1, # 2/5
-                2.85714285714285714e-1, # 2/7
-                2.22222222222222222e-1, # 2/9
-                1.81818181818181818e-1, # 2/11
-                1.53846153846153846e-1, # 2/13
-                1.33333333333333333e-1, # 2/15
-                1.17647058823529412e-1) # 2/17
-    hxsq = 0.5*x*x
-    r*(hxsq+w*t)-hxsq
+    if T == Float32
+        p = (0.6666658f0, 0.40008822f0, 0.2827692f0, 0.26246136f0)
+    else
+        p = (0.6666666666666669,
+             0.3999999999997768,
+             0.2857142857784595,
+             0.2222222142048249,
+             0.18181870670924566,
+             0.15382646727504887,
+             0.1337701340211177,
+             0.11201972567415432,
+             0.143418239946679)
+    end
+    w = evalpoly(t, p)
+    hxsq = x*x/2
+    muladd(r, muladd(w, t, hxsq), -hxsq)
 end
 
 
@@ -465,7 +554,7 @@ $(SIGNATURES)
 
 Compute the complementary double exponential, `1 - exp(-exp(x))`.
 """
-cexpexp(x) = -_expm1(-exp(x))
+cexpexp(x) = -expm1(-exp(x))
 
 #=
 this uses the identity:
