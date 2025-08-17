@@ -64,6 +64,8 @@
         test_rrule(logcosh, x)
         test_frule(logabssinh, x)
         test_rrule(logabssinh, x)
+        test_frule(logabstanh, x)
+        test_rrule(logabstanh, x)
     end
 
     @testset "log1pexp" begin
