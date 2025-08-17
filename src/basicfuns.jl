@@ -223,7 +223,12 @@ Return `log(abs(tanh(x)))`, evaluated carefully.
 The implementation ensures `logabstanh(-x) = logabstanh(x)`.
 """
 function logabstanh(x::Real)
-    return log1p(-2/(exp(2*abs(x))+1))
+    a = abs(x)
+    if 8*a < 3
+        log(tanh(a))
+    else
+        log1p(-2/(exp(2*a)+1))
+    end
 end
 
 """
