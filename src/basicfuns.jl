@@ -406,6 +406,8 @@ end
 # parameters foudn via Remez.jl, specifically:
 # g(x) = evalpoly(x, big(2)./ntuple(i->2i+1, 50))
 # p = T.(Tuple(ratfn_minimax(g, (1e-3, (.425/(.425+2))^2), 8, 0)[1]))
+# A closed form for the Taylor series, after a variable change, is
+# 2 * (atanh(x) - x) / x^3
 function _log1pmx_ker(x::T) where T <: Union{Float32, Float64}
     r = x / (x+2)
     t = r*r
