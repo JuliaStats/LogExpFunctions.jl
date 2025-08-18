@@ -218,6 +218,22 @@ end
 """
 $(SIGNATURES)
 
+Return `log(abs(tanh(x)))`, evaluated carefully.
+
+The implementation ensures `logabstanh(-x) = logabstanh(x)`.
+"""
+function logabstanh(x::Real)
+    a = abs(x)
+    if 8*a < 3
+        log(tanh(a))
+    else
+        log1p(-2/(exp(2*a)+1))
+    end
+end
+
+"""
+$(SIGNATURES)
+
 Return `log(1+x^2)` evaluated carefully for `abs(x)` very small or very large.
 """
 log1psq(x::Real) = log1p(abs2(x))
