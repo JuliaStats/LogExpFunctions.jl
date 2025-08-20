@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- improve `log1pmx`, add `Float32` implimentation
+- improve `log1pmx`, add `Float32` implementation
 - make tests have their own environment, use JET.jl and Aqua.jl
 - improve `_log1pmx_ker` internal documentation on the polynomial
 - improve accuracy of `logit`, `logcosh`
