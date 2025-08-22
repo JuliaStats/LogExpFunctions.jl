@@ -231,6 +231,21 @@ function logabstanh(x::Real)
     end
 end
 
+function logabstanh(x::Float32)
+    a = abs(x)
+    if abs_x < 0.0625f0
+        return log(a) - (1/3f0) * a^2
+    end
+    return log1p(-2/(exp(2*a)+1))
+end
+function logabstanh(x::Float64)
+    a = abs(x)
+    if a < 0x1p-5
+        return log(a) + evalpoly(a*a, (0, -1/3, 7/90, -62/2835))
+    end
+    return log1p(-2/(exp(2*a)+1))
+end
+
 """
 $(SIGNATURES)
 
