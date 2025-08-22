@@ -233,7 +233,7 @@ end
 
 function logabstanh(x::Float32)
     a = abs(x)
-    if abs_x < 0.0625f0
+    if a < 0.0625f0
         return log(a) - (1/3f0) * a^2
     end
     return log1p(-2/(exp(2*a)+1))
