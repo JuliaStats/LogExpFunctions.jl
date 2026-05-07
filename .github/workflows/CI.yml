@@ -24,7 +24,6 @@ jobs:
         version:
           - 'min-patch'
           - '1'
-          - 'pre'
         os:
           - ubuntu-latest
     steps:
