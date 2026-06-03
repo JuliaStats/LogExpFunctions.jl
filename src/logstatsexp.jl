@@ -48,7 +48,7 @@ The result is computed in a numerically stable way.
 function logvarexp(
     X::AbstractArray{<:Real}; dims=:, corrected::Bool=true, logmean=logmeanexp(X; dims=dims)
 )
-    R = logsumexp(2logsubexp.(X, logmean); dims=dims)
+    R = logsumexp(2 * logsubexp.(X, logmean); dims=dims)
     n = _reduced_count(X, R)
     denom = corrected ? n - 1 : n
     return _subtract_log_count(R, denom)
@@ -103,7 +103,7 @@ function _logvariance_terms(X)
     return logsubexp(lse2, 2lse - logn), n
 end
 function _logvariance_terms(X, logmean)
-    R, n = _logsumexp_count((2logsubexp(x, logmean) for x in X))
+    R, n = _logsumexp_count((2 * logsubexp(x, logmean) for x in X))
     return R, n
 end
 function _logsumexp2_count(X)
