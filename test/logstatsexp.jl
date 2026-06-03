@@ -15,8 +15,8 @@ using LogExpFunctions: logmeanexp, logstdexp, logvarexp
             end
         end
         @test @inferred(logmeanexp(X)) ≈ log(mean(exp, X))
-        @test @inferred(logvarexp(X)) ≈ log(var(exp, X))
-        @test @inferred(logstdexp(X)) ≈ log(std(exp, X))
+        @test @inferred(logvarexp(X)) ≈ log(var(exp.(X)))
+        @test @inferred(logstdexp(X)) ≈ log(std(exp.(X)))
     end
 end
 
@@ -24,11 +24,12 @@ end
     x = randn(Float32, 20)
     xt = Tuple(x)
     xg = (v for v in x)
+    xe = exp.(x)
 
     @test @inferred(logmeanexp(xt)) ≈ log(mean(exp, xt))
     @test logmeanexp(xg) ≈ log(mean(exp, x))
-    @test @inferred(logvarexp(xt)) ≈ log(var(exp, xt))
-    @test logvarexp(xt; corrected=false) ≈ log(var(exp, xt; corrected=false))
-    @test @inferred(logstdexp(xt)) ≈ log(std(exp, xt))
-    @test logstdexp(xt; corrected=false) ≈ log(std(exp, xt; corrected=false))
+    @test @inferred(logvarexp(xt)) ≈ log(var(xe))
+    @test logvarexp(xt; corrected=false) ≈ log(var(xe; corrected=false))
+    @test @inferred(logstdexp(xt)) ≈ log(std(xe))
+    @test logstdexp(xt; corrected=false) ≈ log(std(xe; corrected=false))
 end

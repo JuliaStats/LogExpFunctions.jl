@@ -33,7 +33,7 @@ Compute `log(var(exp, X; corrected=corrected))`.
 The result is computed in a numerically stable way.
 """
 function logvarexp(X; corrected::Bool=true, logmean=logmeanexp(X))
-    R = logsumexp(x -> 2logsubexp(x, logmean), X)
+    R = logsumexp((2logsubexp(x, logmean) for x in X))
     n = _count_elements(X)
     denom = corrected ? n - 1 : n
     return R - log(_convert_count(R, denom))
