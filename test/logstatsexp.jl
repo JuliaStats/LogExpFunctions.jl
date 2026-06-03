@@ -1,4 +1,4 @@
-using Test: @test, @testset, @inferred
+using Test: @test, @test_throws, @testset, @inferred
 using Statistics: mean, std, var
 using LogExpFunctions: logmeanexp, logstdexp, logvarexp
 
@@ -43,6 +43,8 @@ end
     @test logstdexp(Iterators.Stateful(x)) ≈ log(std(xe))
     @test isnan(logvarexp((0.0,)))
     @test isnan(logstdexp((0.0,)))
+    @test_throws ArgumentError logvarexp((1.0 + 0.0im, 2.0 + 0.0im))
+    @test_throws ArgumentError logstdexp((1.0 + 0.0im, 2.0 + 0.0im))
 end
 
 @testset "logmeanexp, logvarexp, logstdexp promotion and dims coverage" begin

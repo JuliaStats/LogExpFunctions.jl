@@ -103,13 +103,15 @@ function _logvariance_terms(X)
     return logsubexp(lse2, 2lse - logn), n
 end
 function _logvariance_terms(X, logmean)
-    R, n = _logsumexp_count((2 * logsubexp(x, logmean) for x in X))
+    logmean = _require_real(logmean)
+    R, n = _logsumexp_count((2 * logsubexp(_require_real(x), logmean) for x in X))
     return R, n
 end
 function _logsumexp2_count(X)
     state = iterate(X)
     state === nothing && throw(ArgumentError("reducing over an empty collection is not allowed"))
     x, iter_state = state
+    x = _require_real(x)
     acc = x
     acc2 = 2x
     n = 1
@@ -117,6 +119,7 @@ function _logsumexp2_count(X)
         state = iterate(X, iter_state)
         state === nothing && break
         x, iter_state = state
+        x = _require_real(x)
         n += 1
         acc = _logsumexp_onepass_op(acc, x)
         acc2 = _logsumexp_onepass_op(acc2, 2x)
@@ -137,3 +140,6 @@ end
 
 _reduced_count(X::AbstractArray, R::Number) = length(X)
 _reduced_count(X::AbstractArray, R::AbstractArray) = length(X) ÷ length(R)
+
+_require_real(x::Real) = x
+_require_real(x) = throw(ArgumentError("logvarexp and logstdexp require real inputs"))
