@@ -29,7 +29,7 @@ $(SIGNATURES)
 
 Compute `log(var(exp, X; corrected=corrected))`.
 
-`X` should be an iterator of numbers.
+`X` should be an iterator of real numbers.
 The result is computed in a numerically stable way.
 """
 function logvarexp(X; corrected::Bool=true, logmean=nothing)
@@ -59,7 +59,7 @@ $(SIGNATURES)
 
 Compute `log(std(exp, X; corrected=corrected))`.
 
-`X` should be an iterator of numbers.
+`X` should be an iterator of real numbers.
 The result is computed in a numerically stable way.
 """
 function logstdexp(X; corrected::Bool=true, logmean=nothing)
@@ -96,9 +96,6 @@ function _logsumexp_count(X)
 end
 
 _convert_count(x, n::Integer) = convert(typeof(x), n)
-_count_elements(X) = _count_elements(X, Base.IteratorSize(typeof(X)))
-_count_elements(X, ::Union{Base.HasLength,Base.HasShape}) = length(X)
-_count_elements(X, ::Any) = count(_ -> true, X)
 
 function _logvariance_terms(X)
     lse, lse2, n = _logsumexp2_count(X)
