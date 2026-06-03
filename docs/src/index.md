@@ -38,4 +38,7 @@ loglogistic
 logitexp
 log1mlogistic
 logit1mexp
+logmeanexp
+logvarexp
+logstdexp
 ```
