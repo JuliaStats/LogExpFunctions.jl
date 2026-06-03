@@ -30,14 +30,19 @@ end
     @test @inferred(logmeanexp(xt)) ≈ log(mean(exp, xt))
     @test logmeanexp(xg) ≈ log(mean(exp, x))
     @test @inferred(logmeanexp(xf)) ≈ log(mean(exp, x))
+    @test logmeanexp(Iterators.Stateful(x)) ≈ log(mean(exp, x))
     @test @inferred(logvarexp(xt)) ≈ log(var(xe))
     @test logvarexp(xt; corrected=false) ≈ log(var(xe; corrected=false))
     @test @inferred(logvarexp((v for v in x))) ≈ log(var(xe))
     @test logvarexp((v for v in x); corrected=false) ≈ log(var(xe; corrected=false))
+    @test logvarexp(Iterators.Stateful(x)) ≈ log(var(xe))
     @test @inferred(logstdexp(xt)) ≈ log(std(xe))
     @test logstdexp(xt; corrected=false) ≈ log(std(xe; corrected=false))
     @test @inferred(logstdexp((v for v in x))) ≈ log(std(xe))
     @test logstdexp((v for v in x); corrected=false) ≈ log(std(xe; corrected=false))
+    @test logstdexp(Iterators.Stateful(x)) ≈ log(std(xe))
+    @test isnan(logvarexp((0.0,)))
+    @test isnan(logstdexp((0.0,)))
 end
 
 @testset "logmeanexp, logvarexp, logstdexp promotion and dims coverage" begin
@@ -52,4 +57,11 @@ end
     @test typeof(@inferred(logmeanexp(X; dims=:))) == Float32
     @test typeof(@inferred(logvarexp(X; dims=:))) == Float32
     @test typeof(@inferred(logstdexp(X; dims=:))) == Float32
+
+    X1 = reshape(randn(Float64, 8), 1, 8)
+    @test all(isnan, logvarexp(X1; dims=1, corrected=true))
+    @test all(isnan, logstdexp(X1; dims=1, corrected=true))
+    Xsingleton = fill(0.0f0, 1, 1, 1)
+    @test isnan(logvarexp(Xsingleton; dims=:, corrected=true))
+    @test isnan(logstdexp(Xsingleton; dims=:, corrected=true))
 end

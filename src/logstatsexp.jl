@@ -20,7 +20,7 @@ The result is computed in a numerically stable way.
 """
 function logmeanexp(X::AbstractArray{<:Number}; dims=:)
     R = logsumexp(X; dims=dims)
-    n = length(X) ÷ length(R)
+    n = _reduced_count(X, R)
     return _subtract_log_count(R, n)
 end
 
@@ -32,11 +32,10 @@ Compute `log(var(exp, X; corrected=corrected))`.
 `X` should be an iterator of numbers.
 The result is computed in a numerically stable way.
 """
-function logvarexp(X; corrected::Bool=true, logmean=logmeanexp(X))
-    R = logsumexp((2logsubexp(x, logmean) for x in X))
-    n = _count_elements(X)
+function logvarexp(X; corrected::Bool=true, logmean=nothing)
+    R, n = isnothing(logmean) ? _logvariance_terms(X) : _logvariance_terms(X, logmean)
     denom = corrected ? n - 1 : n
-    return R - log(_convert_count(R, denom))
+    return _subtract_log_count(R, denom)
 end
 
 """
@@ -46,9 +45,11 @@ Compute `log.(var(exp.(X); dims=dims, corrected=corrected))`.
 
 The result is computed in a numerically stable way.
 """
-function logvarexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true, logmean=logmeanexp(X; dims=dims))
+function logvarexp(
+    X::AbstractArray{<:Real}; dims=:, corrected::Bool=true, logmean=logmeanexp(X; dims=dims)
+)
     R = logsumexp(2logsubexp.(X, logmean); dims=dims)
-    n = length(X) ÷ length(R)
+    n = _reduced_count(X, R)
     denom = corrected ? n - 1 : n
     return _subtract_log_count(R, denom)
 end
@@ -61,7 +62,7 @@ Compute `log(std(exp, X; corrected=corrected))`.
 `X` should be an iterator of numbers.
 The result is computed in a numerically stable way.
 """
-function logstdexp(X; corrected::Bool=true, logmean=logmeanexp(X))
+function logstdexp(X; corrected::Bool=true, logmean=nothing)
     return logvarexp(X; corrected=corrected, logmean=logmean) / 2
 end
 
@@ -72,7 +73,9 @@ Compute `log.(std(exp.(X); dims=dims, corrected=corrected))`.
 
 The result is computed in a numerically stable way.
 """
-function logstdexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true, logmean=logmeanexp(X; dims=dims))
+function logstdexp(
+    X::AbstractArray{<:Real}; dims=:, corrected::Bool=true, logmean=logmeanexp(X; dims=dims)
+)
     return logvarexp(X; dims=dims, corrected=corrected, logmean=logmean) / 2
 end
 
@@ -97,9 +100,43 @@ _count_elements(X) = _count_elements(X, Base.IteratorSize(typeof(X)))
 _count_elements(X, ::Union{Base.HasLength,Base.HasShape}) = length(X)
 _count_elements(X, ::Any) = count(_ -> true, X)
 
-_subtract_log_count(R::Number, n::Integer) = R - log(_convert_count(R, n))
+function _logvariance_terms(X)
+    lse, lse2, n = _logsumexp2_count(X)
+    logn = log(_convert_count(lse, n))
+    return logsubexp(lse2, 2lse - logn), n
+end
+function _logvariance_terms(X, logmean)
+    R, n = _logsumexp_count((2logsubexp(x, logmean) for x in X))
+    return R, n
+end
+function _logsumexp2_count(X)
+    state = iterate(X)
+    state === nothing && throw(ArgumentError("reducing over an empty collection is not allowed"))
+    x, iter_state = state
+    acc = x
+    acc2 = 2x
+    n = 1
+    while true
+        state = iterate(X, iter_state)
+        state === nothing && break
+        x, iter_state = state
+        n += 1
+        acc = _logsumexp_onepass_op(acc, x)
+        acc2 = _logsumexp_onepass_op(acc2, 2x)
+    end
+    return _logsumexp_onepass_result(acc), _logsumexp_onepass_result(acc2), n
+end
+
+function _subtract_log_count(R::Number, n::Integer)
+    n == 0 && return oftype(float(R), NaN)
+    return R - log(_convert_count(R, n))
+end
 function _subtract_log_count(R::AbstractArray{<:Number}, n::Integer)
+    n == 0 && return fill!(R, convert(eltype(R), NaN))
     logn = log(convert(eltype(R), n))
     R .-= logn
     return R
 end
+
+_reduced_count(X::AbstractArray, R::Number) = length(X)
+_reduced_count(X::AbstractArray, R::AbstractArray) = length(X) ÷ length(R)
