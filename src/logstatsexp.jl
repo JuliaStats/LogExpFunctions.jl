@@ -71,7 +71,7 @@ end
 _centered_logvar(X, logmean, ::Colon, corrected::Bool) =  # scalar reduction, no temporary
     _finish_logvar(_centered_logsqdev(X, logmean), length(X), corrected)
 _centered_logvar(X, logmean, dims, corrected::Bool) =
-    _finish_logvar(logsumexp(2 .* logsubexp.(X, logmean); dims=dims), _reduced_count(X, logmean), corrected)
+    _finish_logvar(logsumexp(_logsqdev_lazy(X, logmean); dims=dims), _reduced_count(X, logmean), corrected)
 
 """
 $(SIGNATURES)
@@ -158,21 +158,43 @@ _known_length(_, X) = nothing
 _materialize(X) = collect(X)
 _materialize(X::Union{AbstractArray,Tuple,NamedTuple,AbstractRange}) = X
 
+# log of the (centered) squared deviation of a single point, `2 * logsubexp(xᵢ, logmean)`
+# (i.e. `log((exp(xᵢ) - mean)^2)`). This is the term summed to form the variance.
+_logsqdev_term(x, logmean) = 2 * logsubexp(_require_real(x), logmean)
+
 # log of the sum of squared deviations, `logsumexp(2 * logsubexp(xᵢ, logmean))`,
 # accumulated in a single pass without allocating an intermediate array.
 function _centered_logsqdev(X, logmean)
     next = iterate(X)
     isnothing(next) && _throw_empty()
     x, state = next
-    acc = 2 * logsubexp(_require_real(x), logmean)
+    acc = _logsqdev_term(x, logmean)
     while true
         next = iterate(X, state)
         isnothing(next) && break
         x, state = next
-        acc = _logsumexp_onepass_op(acc, 2 * logsubexp(_require_real(x), logmean))
+        acc = _logsumexp_onepass_op(acc, _logsqdev_term(x, logmean))
     end
     return _logsumexp_onepass_result(acc)
 end
+
+# For a `dims`-reduction we cannot accumulate in a single scalar pass, but we still avoid
+# materializing the full-size `2 .* logsubexp.(X, logmean)`: `_LazyLogSqDev` is a read-only
+# `AbstractArray` view of that broadcast, so `logsumexp(...; dims)` reduces it on the fly
+# and only allocates the (smaller) reduced result. A bare `Broadcasted` cannot be used
+# directly, as it does not implement the `axes(_, i)` that `dims` reductions require.
+struct _LazyLogSqDev{T,N,B<:Base.Broadcast.Broadcasted} <: AbstractArray{T,N}
+    bc::B
+end
+function _logsqdev_lazy(X, logmean)
+    bc = Base.Broadcast.instantiate(Base.broadcasted(_logsqdev_term, X, logmean))
+    T = Base.Broadcast.combine_eltypes(bc.f, bc.args)
+    return _LazyLogSqDev{T,ndims(bc),typeof(bc)}(bc)
+end
+Base.size(A::_LazyLogSqDev) = map(length, axes(A.bc))
+Base.axes(A::_LazyLogSqDev) = axes(A.bc)
+Base.IndexStyle(::Type{<:_LazyLogSqDev}) = IndexCartesian()
+Base.@propagate_inbounds Base.getindex(A::_LazyLogSqDev, I::Int...) = A.bc[I...]
 
 # divide the squared-deviation sum by the count, in log space. For a single element
 # (`n - corrected == 0`) the numerator is `-Inf` and `log` of the denominator is also

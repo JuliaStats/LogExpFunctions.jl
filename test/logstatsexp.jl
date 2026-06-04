@@ -7,6 +7,9 @@ using LogExpFunctions: logmeanexp, logstdexp, logvarexp,
 # arguments so that they are concretely typed inside this function (avoiding spurious
 # allocations from captured, boxed locals).
 allocations(f, x) = (f(x); @allocated f(x))
+# Same, for the `dims` keyword form (`x` is preallocated by the caller, so only the
+# allocations of `f(x; dims=1)` itself are counted).
+allocations_dims(f, x) = (f(x; dims=1); @allocated f(x; dims=1))
 
 @testset "logmeanexp, logvarexp, logstdexp arrays" begin
     for T in (Float32, Float64)
@@ -54,6 +57,8 @@ end
     @test_throws ArgumentError logmeanexp(())
     @test_throws ArgumentError logmeanexp(Float64[])
     @test_throws ArgumentError logvarexp(())
+    @test_throws ArgumentError logvarexp(Float64[])
+end
 
 @testset "logmeanexp, logvarexp, logstdexp promotion and dims coverage" begin
     X = randn(Float32, 5, 3, 2)
@@ -135,6 +140,13 @@ end
         # genuinely allocation-free paths
         @test allocations(logmeanexp, randn(T, 10_000)) == 0
         @test allocations(logvarexp, Tuple(randn(T, 20))) == 0
+        # `dims` reductions allocate only the (fixed-size) reduced output, never a
+        # temporary the size of the input: the variance is fused into `logsumexp` lazily.
+        # Reducing along `dims=1` gives the same `(1, 4)` output for both sizes, so a
+        # constant allocation count confirms no O(length(X)) intermediate is built.
+        for f in (logvarexp, logstdexp, logmeanexp_and_logvarexp, logmeanexp_and_logstdexp)
+            @test allocations_dims(f, randn(T, 10_000, 4)) == allocations_dims(f, randn(T, 100, 4))
+        end
     end
 end
 
