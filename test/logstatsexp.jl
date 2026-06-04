@@ -125,16 +125,49 @@ end
 end
 
 @testset "allocations" begin
+    # Full reductions allocate at most a small constant (no per-element / O(n) temporary):
+    # the allocation count must not grow with the input size.
     for T in (Float32, Float64)
-        v = randn(T, 1000)
-        tup = Tuple(randn(T, 20))
-        # full reductions over arrays / iterators allocate nothing
-        @test allocations(logmeanexp, v) == 0
-        @test allocations(logvarexp, v) == 0
-        @test allocations(logstdexp, v) == 0
-        @test allocations(logmeanexp_and_logvarexp, v) == 0
-        @test allocations(logmeanexp_and_logstdexp, v) == 0
-        @test allocations(logvarexp, tup) == 0
-        @test allocations(logmeanexp_and_logvarexp, tup) == 0
+        for f in (logmeanexp, logvarexp, logstdexp,
+                  logmeanexp_and_logvarexp, logmeanexp_and_logstdexp)
+            @test allocations(f, randn(T, 10_000)) == allocations(f, randn(T, 100))
+        end
+        # genuinely allocation-free paths
+        @test allocations(logmeanexp, randn(T, 10_000)) == 0
+        @test allocations(logvarexp, Tuple(randn(T, 20))) == 0
+    end
+end
+
+@testset "numerical robustness" begin
+    # Compare against high-precision (BigFloat) references on hard cases: tight clusters
+    # (var ≪ mean², where a raw second-moment formula cancels catastrophically) and
+    # values large/small enough that exp would over-/under-flow Float64.
+    setprecision(BigFloat, 256) do
+        refmean(x) = Float64(log(mean(exp.(big.(x)))))
+        refvar(x; corrected=true) = Float64(log(var(exp.(big.(x)); corrected=corrected)))
+        cases = (
+            1.0 .+ 1e-3 .* randn(500),   # tight cluster
+            1.0 .+ 1e-6 .* randn(500),   # very tight: var ≪ mean²
+            700.0 .+ randn(200),         # exp overflows Float64 (>~709)
+            -700.0 .+ randn(200),        # exp underflows to 0
+            1000.0 .* randn(500),        # huge dynamic range
+            [3.0, 3.0 + 1e-10],          # nearly-equal pair
+            [0.0, 1e-6],
+        )
+        for x in cases
+            # atol covers near-zero results (e.g. logmeanexp([0, 1e-6]) ≈ 5e-7), where
+            # an inherent cancellation makes the relative error meaningless
+            @test logmeanexp(x) ≈ refmean(x) rtol = 1e-9 atol = 1e-10
+            for corrected in (true, false)
+                @test logvarexp(x; corrected=corrected) ≈ refvar(x; corrected=corrected) rtol = 1e-8 atol = 1e-9
+                @test logstdexp(x; corrected=corrected) ≈ refvar(x; corrected=corrected) / 2 rtol = 1e-8 atol = 1e-9
+            end
+        end
+        # array and one-shot-iterator paths agree even in the cancellation regime
+        x = 1.0 .+ 1e-5 .* randn(100)
+        @test logvarexp(x) ≈ logvarexp(Iterators.Stateful(x)) rtol = 1e-10
+        m, v = logmeanexp_and_logvarexp(Iterators.Stateful(x))
+        @test m ≈ logmeanexp(x) rtol = 1e-10
+        @test v ≈ logvarexp(x) rtol = 1e-10
     end
 end

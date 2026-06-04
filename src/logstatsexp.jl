@@ -1,14 +1,14 @@
 # Numerically stable `log`-of-statistics-of-`exp` reductions.
 #
-# Everything here is derived from at most two `logsumexp` accumulators,
+# The mean is `logsumexp(X) - log(n)`. The variance uses the *centered* formula
 #
-#     lse  = log ∑ᵢ exp(xᵢ)          (first moment)
-#     lse2 = log ∑ᵢ exp(2xᵢ)         (second moment)
+#     log var = logsumexp(2 * logsubexp(xᵢ, logmean)) - log(n - corrected)
 #
-# together with the number of elements `n`. For a general iterator both
-# accumulators are computed in a single pass (important for one-shot iterators
-# such as `Iterators.Stateful`); for an `AbstractArray` we reuse the optimized
-# `logsumexp` and take `n` from `length`, which is cheap.
+# i.e. the log of the sum of squared deviations `∑ᵢ (exp(xᵢ) - mean)²`, divided by the
+# count. Centering is essential for numerical stability: the raw-moment alternative
+# `logsubexp(∑exp(2xᵢ), (∑exp(xᵢ))²/n)` cancels catastrophically when the variance is
+# small relative to the mean (and can even overflow to `Inf` for nearly-equal inputs).
+# Computing the variance therefore needs the mean first, hence the two helpers below.
 
 """
 $(SIGNATURES)
@@ -42,24 +42,52 @@ end
 """
 $(SIGNATURES)
 
+Compute `(log(mean(exp, X)), log(var(exp, X; corrected=corrected)))` in a numerically
+stable way. Computing the two together is cheaper than calling [`logmeanexp`](@ref) and
+[`logvarexp`](@ref) separately, since the mean is reused to center the variance.
+
+`X` should be an iterator of real numbers.
+"""
+function logmeanexp_and_logvarexp(X; corrected::Bool=true)
+    xs = _materialize(X)
+    logmean = logmeanexp(xs)
+    logsqdev = _centered_logsqdev(xs, logmean)
+    return logmean, _finish_logvar(logsqdev, length(xs), corrected)
+end
+
+"""
+$(SIGNATURES)
+
+Compute `(log.(mean(exp.(X); dims)), log.(var(exp.(X); dims, corrected)))` in a
+numerically stable way, reusing the mean to center the variance.
+"""
+function logmeanexp_and_logvarexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true)
+    logmean = logmeanexp(X; dims=dims)
+    return logmean, _centered_logvar(X, logmean, dims, corrected)
+end
+
+# dispatch on `dims` so the return type is concrete (no `Union` of scalar/array results)
+_centered_logvar(X, logmean, ::Colon, corrected::Bool) =  # scalar reduction, no temporary
+    _finish_logvar(_centered_logsqdev(X, logmean), length(X), corrected)
+_centered_logvar(X, logmean, dims, corrected::Bool) =
+    _finish_logvar(logsumexp(2 .* logsubexp.(X, logmean); dims=dims), _reduced_count(X, logmean), corrected)
+
+"""
+$(SIGNATURES)
+
 Compute `log(var(exp, X; corrected=corrected))` in a numerically stable way.
 
 `X` should be an iterator of real numbers.
 """
-function logvarexp(X; corrected::Bool=true)
-    lse, lse2, n = _logmoments(X)
-    return _logvar(lse, lse2, n, corrected)
-end
+logvarexp(X; corrected::Bool=true) = last(logmeanexp_and_logvarexp(X; corrected=corrected))
 
 """
 $(SIGNATURES)
 
 Compute `log.(var(exp.(X); dims=dims, corrected=corrected))` in a numerically stable way.
 """
-function logvarexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true)
-    lse, lse2, n = _logmoments(X, dims)
-    return _logvar(lse, lse2, n, corrected)
-end
+logvarexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true) =
+    last(logmeanexp_and_logvarexp(X; dims=dims, corrected=corrected))
 
 """
 $(SIGNATURES)
@@ -81,32 +109,8 @@ logstdexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true) =
 """
 $(SIGNATURES)
 
-Compute `(log(mean(exp, X)), log(var(exp, X; corrected=corrected)))` in a numerically
-stable way, using a single pass over the data.
-
-`X` should be an iterator of real numbers.
-"""
-function logmeanexp_and_logvarexp(X; corrected::Bool=true)
-    lse, lse2, n = _logmoments(X)
-    return lse - _log_count(lse, n), _logvar(lse, lse2, n, corrected)
-end
-
-"""
-$(SIGNATURES)
-
-Compute `(log.(mean(exp.(X); dims)), log.(var(exp.(X); dims, corrected)))` in a numerically
-stable way.
-"""
-function logmeanexp_and_logvarexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true)
-    lse, lse2, n = _logmoments(X, dims)
-    return lse .- _log_count(lse, n), _logvar(lse, lse2, n, corrected)
-end
-
-"""
-$(SIGNATURES)
-
 Compute `(log(mean(exp, X)), log(std(exp, X; corrected=corrected)))` in a numerically
-stable way, using a single pass over the data.
+stable way, reusing the mean to center the variance.
 
 `X` should be an iterator of real numbers.
 """
@@ -118,8 +122,8 @@ end
 """
 $(SIGNATURES)
 
-Compute `(log.(mean(exp.(X); dims)), log.(std(exp.(X); dims, corrected)))` in a numerically
-stable way.
+Compute `(log.(mean(exp.(X); dims)), log.(std(exp.(X); dims, corrected)))` in a
+numerically stable way, reusing the mean to center the variance.
 """
 function logmeanexp_and_logstdexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true)
     logmean, logvar = logmeanexp_and_logvarexp(X; dims=dims, corrected=corrected)
@@ -145,16 +149,35 @@ _known_length(X) = _known_length(Base.IteratorSize(typeof(X)), X)
 _known_length(::Union{Base.HasLength,Base.HasShape}, X) = length(X)
 _known_length(_, X) = nothing
 
-# `log(var)` from the raw log-moments. The squared-deviation sum is
-# `∑ᵢ (exp(xᵢ) - mean)² = ∑ᵢ exp(2xᵢ) - (∑ᵢ exp(xᵢ))² / n`, i.e.
-# `logsubexp(lse2, 2 * lse - log(n))` in log space. For a single element
+# Variance is centered, so we need to traverse the data twice (mean, then deviations).
+# Known re-iterable containers are traversed in place; any other iterator is materialized
+# once, so that one-shot iterators (e.g. `Iterators.Stateful`) are handled correctly.
+# (`IteratorSize` cannot be used to detect re-iterability: `Stateful` reports `HasLength`
+# on some Julia versions yet is single-use.)
+_materialize(X) = collect(X)
+_materialize(X::Union{AbstractArray,Tuple,NamedTuple,AbstractRange}) = X
+
+# log of the sum of squared deviations, `logsumexp(2 * logsubexp(xᵢ, logmean))`,
+# accumulated in a single pass without allocating an intermediate array.
+function _centered_logsqdev(X, logmean)
+    next = iterate(X)
+    isnothing(next) && _throw_empty()
+    x, state = next
+    acc = 2 * logsubexp(_require_real(x), logmean)
+    while true
+        next = iterate(X, state)
+        isnothing(next) && break
+        x, state = next
+        acc = _logsumexp_onepass_op(acc, 2 * logsubexp(_require_real(x), logmean))
+    end
+    return _logsumexp_onepass_result(acc)
+end
+
+# divide the squared-deviation sum by the count, in log space. For a single element
 # (`n - corrected == 0`) the numerator is `-Inf` and `log` of the denominator is also
 # `-Inf`, so the result is `NaN`, matching `var`.
-function _logvar(lse, lse2, n::Integer, corrected::Bool)
-    logn = _log_count(lse2, n)
-    logdenom = _log_count(lse2, corrected ? n - 1 : n)
-    return @. logsubexp(lse2, 2 * lse - logn) - logdenom
-end
+_finish_logvar(logsqdev, n::Integer, corrected::Bool) =
+    logsqdev .- _log_count(logsqdev, corrected ? n - 1 : n)
 
 # Single pass over a general iterator: (logsumexp(X), count).
 function _logsumexp_and_count(X)
@@ -171,34 +194,4 @@ function _logsumexp_and_count(X)
         n += 1
     end
     return _logsumexp_onepass_result(acc), n
-end
-
-# Single pass over a general iterator of reals: (logsumexp(X), logsumexp(2X), count).
-function _logmoments(X)
-    next = iterate(X)
-    isnothing(next) && _throw_empty()
-    x, state = next
-    x = _require_real(x)
-    acc = x
-    acc2 = 2x
-    n = 1
-    while true
-        next = iterate(X, state)
-        isnothing(next) && break
-        x, state = next
-        x = _require_real(x)
-        acc = _logsumexp_onepass_op(acc, x)
-        acc2 = _logsumexp_onepass_op(acc2, 2x)
-        n += 1
-    end
-    return _logsumexp_onepass_result(acc), _logsumexp_onepass_result(acc2), n
-end
-
-# Array version: reuse the optimized `logsumexp` and take the count from `length`.
-function _logmoments(X::AbstractArray{<:Real}, dims)
-    # full reduction: a single pass avoids allocating the `2 .* X` temporary
-    dims === Colon() && return _logmoments(X)
-    lse = logsumexp(X; dims=dims)
-    lse2 = logsumexp(2 .* X; dims=dims)
-    return lse, lse2, _reduced_count(X, lse)
 end
