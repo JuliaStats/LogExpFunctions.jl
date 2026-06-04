@@ -62,7 +62,8 @@ $(SIGNATURES)
 Compute `(log.(mean(exp.(X); dims)), log.(var(exp.(X); dims, corrected)))` in a
 numerically stable way, reusing the mean to center the variance.
 """
-function logmeanexp_and_logvarexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true)
+function logmeanexp_and_logvarexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true)
+    _require_real_array(X)
     logmean = logmeanexp(X; dims=dims)
     return logmean, _centered_logvar(X, logmean, dims, corrected)
 end
@@ -71,7 +72,7 @@ end
 _centered_logvar(X, logmean, ::Colon, corrected::Bool) =  # scalar reduction, no temporary
     _finish_logvar(_centered_logsqdev(X, logmean), length(X), corrected)
 _centered_logvar(X, logmean, dims, corrected::Bool) =
-    _finish_logvar(logsumexp(_logsqdev_lazy(X, logmean); dims=dims), _reduced_count(X, logmean), corrected)
+    _finish_logvar(logsumexp(2 .* logsubexp.(X, logmean); dims=dims), _reduced_count(X, logmean), corrected)
 
 """
 $(SIGNATURES)
@@ -87,7 +88,7 @@ $(SIGNATURES)
 
 Compute `log.(var(exp.(X); dims=dims, corrected=corrected))` in a numerically stable way.
 """
-logvarexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true) =
+logvarexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true) =
     last(logmeanexp_and_logvarexp(X; dims=dims, corrected=corrected))
 
 """
@@ -104,7 +105,7 @@ $(SIGNATURES)
 
 Compute `log.(std(exp.(X); dims=dims, corrected=corrected))` in a numerically stable way.
 """
-logstdexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true) =
+logstdexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true) =
     logvarexp(X; dims=dims, corrected=corrected) / 2
 
 """
@@ -126,7 +127,7 @@ $(SIGNATURES)
 Compute `(log.(mean(exp.(X); dims)), log.(std(exp.(X); dims, corrected)))` in a
 numerically stable way, reusing the mean to center the variance.
 """
-function logmeanexp_and_logstdexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true)
+function logmeanexp_and_logstdexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true)
     logmean, logvar = logmeanexp_and_logvarexp(X; dims=dims, corrected=corrected)
     return logmean, logvar / 2
 end
@@ -140,11 +141,19 @@ _throw_empty() = throw(ArgumentError("reducing over an empty collection is not a
 # `n == 0` gives `log(0) == -Inf`, which produces the expected `NaN`/`-Inf` results.
 _log_count(R, n::Integer) = log(convert(real(float(eltype(R))), n))
 
-# number of elements reduced into each entry of `R`
-_reduced_count(X::AbstractArray, R) = length(X) ÷ length(R)
+# number of elements reduced into each entry of `R`. When `R` is empty (the reduction
+# produced no cells, e.g. `X` is empty along a dimension that is not being reduced) the
+# count is irrelevant — the result is empty — so avoid dividing by zero.
+_reduced_count(X::AbstractArray, R) = isempty(R) ? 0 : length(X) ÷ length(R)
 
 _require_real(x::Real) = x
 _require_real(x) = throw(ArgumentError("logvarexp and logstdexp require real inputs"))
+
+# variance/std require real inputs; reject a non-real element type up front (with the same
+# message as `_require_real`) so the array `dims` paths fail cleanly instead of hitting a
+# `MethodError` deep inside `logsubexp`.
+_require_real_array(X::AbstractArray{<:Real}) = X
+_require_real_array(X::AbstractArray) = throw(ArgumentError("logvarexp and logstdexp require real inputs"))
 
 _known_length(X) = _known_length(Base.IteratorSize(typeof(X)), X)
 _known_length(::Union{Base.HasLength,Base.HasShape}, X) = length(X)
@@ -178,29 +187,12 @@ function _centered_logsqdev(X, logmean)
     return _logsumexp_onepass_result(acc)
 end
 
-# For a `dims`-reduction we cannot accumulate in a single scalar pass, but we still avoid
-# materializing the full-size `2 .* logsubexp.(X, logmean)`: `_LazyLogSqDev` is a read-only
-# `AbstractArray` view of that broadcast, so `logsumexp(...; dims)` reduces it on the fly
-# and only allocates the (smaller) reduced result. A bare `Broadcasted` cannot be used
-# directly, as it does not implement the `axes(_, i)` that `dims` reductions require.
-struct _LazyLogSqDev{T,N,B<:Base.Broadcast.Broadcasted} <: AbstractArray{T,N}
-    bc::B
-end
-function _logsqdev_lazy(X, logmean)
-    bc = Base.Broadcast.instantiate(Base.broadcasted(_logsqdev_term, X, logmean))
-    T = Base.Broadcast.combine_eltypes(bc.f, bc.args)
-    return _LazyLogSqDev{T,ndims(bc),typeof(bc)}(bc)
-end
-Base.size(A::_LazyLogSqDev) = map(length, axes(A.bc))
-Base.axes(A::_LazyLogSqDev) = axes(A.bc)
-Base.IndexStyle(::Type{<:_LazyLogSqDev}) = IndexCartesian()
-Base.@propagate_inbounds Base.getindex(A::_LazyLogSqDev, I::Int...) = A.bc[I...]
-
-# divide the squared-deviation sum by the count, in log space. For a single element
-# (`n - corrected == 0`) the numerator is `-Inf` and `log` of the denominator is also
-# `-Inf`, so the result is `NaN`, matching `var`.
+# divide the squared-deviation sum by the count, in log space. When the (corrected) count
+# is non-positive — a single element with `corrected=true`, or an empty reduction — the
+# numerator and `log` of the (clamped-to-zero) denominator are both `-Inf`, giving `NaN`,
+# matching `var`. Clamping to zero also avoids `log(-1)` for an empty `corrected=true` case.
 _finish_logvar(logsqdev, n::Integer, corrected::Bool) =
-    logsqdev .- _log_count(logsqdev, corrected ? n - 1 : n)
+    logsqdev .- _log_count(logsqdev, max(0, corrected ? n - 1 : n))
 
 # Single pass over a general iterator: (logsumexp(X), count).
 function _logsumexp_and_count(X)

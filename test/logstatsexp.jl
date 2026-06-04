@@ -1,5 +1,6 @@
 using Test: @test, @test_throws, @testset, @inferred
 using Statistics: mean, std, var
+using OffsetArrays: OffsetArray
 using LogExpFunctions: logmeanexp, logstdexp, logvarexp,
     logmeanexp_and_logvarexp, logmeanexp_and_logstdexp
 
@@ -7,9 +8,6 @@ using LogExpFunctions: logmeanexp, logstdexp, logvarexp,
 # arguments so that they are concretely typed inside this function (avoiding spurious
 # allocations from captured, boxed locals).
 allocations(f, x) = (f(x); @allocated f(x))
-# Same, for the `dims` keyword form (`x` is preallocated by the caller, so only the
-# allocations of `f(x; dims=1)` itself are counted).
-allocations_dims(f, x) = (f(x; dims=1); @allocated f(x; dims=1))
 
 @testset "logmeanexp, logvarexp, logstdexp arrays" begin
     for T in (Float32, Float64)
@@ -81,6 +79,57 @@ end
     @test isnan(logstdexp(Xsingleton; dims=:, corrected=true))
 end
 
+# Regressions for correctness bugs found in review. Each block is one bug class.
+@testset "edge-case regressions" begin
+    # Non-1-based axes (OffsetArrays): the `dims` variance/std must match the result on
+    # the equivalent 1-based array (a fused lazy reduction silently returned wrong values).
+    base = randn(4, 3)
+    oa = OffsetArray(base, -1, -1)
+    for dims in (1, 2, :)
+        @test collect(logmeanexp(oa; dims=dims)) ≈ collect(logmeanexp(base; dims=dims))
+        for corrected in (true, false)
+            @test collect(logvarexp(oa; dims=dims, corrected=corrected)) ≈
+                collect(logvarexp(base; dims=dims, corrected=corrected))
+            @test collect(logstdexp(oa; dims=dims, corrected=corrected)) ≈
+                collect(logstdexp(base; dims=dims, corrected=corrected))
+        end
+    end
+
+    # Abstract element type: the `dims` variance must still work (and match a concretely
+    # typed copy), not throw a MethodError.
+    Xabstract = Real[1.0 2.0 3.0; 4.0 5.0 6.0]
+    Xconcrete = Float64.(Xabstract)
+    @test logvarexp(Xabstract; dims=1) ≈ logvarexp(Xconcrete; dims=1)
+    @test logvarexp(Xabstract) ≈ logvarexp(Xconcrete)
+    @test logmeanexp_and_logvarexp(Xabstract; dims=2)[2] ≈ logvarexp(Xconcrete; dims=2)
+
+    # Empty reduction along the reduced dimension: `var` is NaN (not an error) for every
+    # `corrected`, matching `Statistics.var` and `logmeanexp`.
+    Eredux = Matrix{Float64}(undef, 0, 3)
+    @test all(isnan, logmeanexp(Eredux; dims=1))
+    for corrected in (true, false)
+        @test all(isnan, logvarexp(Eredux; dims=1, corrected=corrected))
+        @test all(isnan, logstdexp(Eredux; dims=1, corrected=corrected))
+        @test all(isnan, logmeanexp_and_logvarexp(Eredux; dims=1, corrected=corrected)[2])
+    end
+
+    # Empty along a dimension that is NOT being reduced: the result is an empty array of
+    # the reduced shape (no DivideError).
+    Eother = Matrix{Float64}(undef, 3, 0)
+    @test size(logmeanexp(Eother; dims=1)) == (1, 0)
+    @test size(logvarexp(Eother; dims=1)) == (1, 0)
+    @test size(logstdexp(Eother; dims=1)) == (1, 0)
+
+    # Complex arrays are rejected with a clear ArgumentError on every variance/std path,
+    # with or without `dims` (previously the `dims` form threw a confusing MethodError).
+    C = ComplexF64[1 2; 3 4]
+    @test_throws ArgumentError logvarexp(C)
+    @test_throws ArgumentError logvarexp(C; dims=1)
+    @test_throws ArgumentError logstdexp(C; dims=2)
+    @test_throws ArgumentError logmeanexp_and_logvarexp(C; dims=1)
+    @test_throws ArgumentError logmeanexp_and_logstdexp(C; dims=1)
+end
+
 @testset "logmeanexp_and_logvarexp, logmeanexp_and_logstdexp" begin
     for T in (Float32, Float64)
         X = randn(T, 5, 3, 2)
@@ -140,13 +189,6 @@ end
         # genuinely allocation-free paths
         @test allocations(logmeanexp, randn(T, 10_000)) == 0
         @test allocations(logvarexp, Tuple(randn(T, 20))) == 0
-        # `dims` reductions allocate only the (fixed-size) reduced output, never a
-        # temporary the size of the input: the variance is fused into `logsumexp` lazily.
-        # Reducing along `dims=1` gives the same `(1, 4)` output for both sizes, so a
-        # constant allocation count confirms no O(length(X)) intermediate is built.
-        for f in (logvarexp, logstdexp, logmeanexp_and_logvarexp, logmeanexp_and_logstdexp)
-            @test allocations_dims(f, randn(T, 10_000, 4)) == allocations_dims(f, randn(T, 100, 4))
-        end
     end
 end
 
