@@ -104,7 +104,7 @@ $(SIGNATURES)
 Compute `log.(std(exp.(X); dims=dims, corrected=corrected))` in a numerically stable way.
 """
 logstdexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true) =
-    logvarexp(X; dims=dims, corrected=corrected) ./ 2
+    logvarexp(X; dims=dims, corrected=corrected) / 2
 
 """
 $(SIGNATURES)
@@ -127,7 +127,7 @@ numerically stable way, reusing the mean to center the variance.
 """
 function logmeanexp_and_logstdexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true)
     logmean, logvar = logmeanexp_and_logvarexp(X; dims=dims, corrected=corrected)
-    return logmean, logvar ./ 2
+    return logmean, logvar / 2
 end
 
 # ---- internal helpers ----
