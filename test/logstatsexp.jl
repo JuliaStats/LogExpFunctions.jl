@@ -52,8 +52,8 @@ end
     @test_throws ArgumentError logvarexp((1.0 + 0.0im, 2.0 + 0.0im))
     @test_throws ArgumentError logstdexp((1.0 + 0.0im, 2.0 + 0.0im))
     @test_throws ArgumentError logmeanexp(())
+    @test_throws ArgumentError logmeanexp(Float64[])
     @test_throws ArgumentError logvarexp(())
-end
 
 @testset "logmeanexp, logvarexp, logstdexp promotion and dims coverage" begin
     X = randn(Float32, 5, 3, 2)
