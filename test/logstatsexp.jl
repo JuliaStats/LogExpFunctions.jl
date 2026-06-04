@@ -9,6 +9,23 @@ using LogExpFunctions: logmeanexp, logstdexp, logvarexp,
 # allocations from captured, boxed locals).
 allocations(f, x) = (f(x); @allocated f(x))
 
+# A single-use iterator that nonetheless advertises a length (so it exercises the
+# length-aware code path). Iterating it consumes it; a second traversal — or an
+# `isempty` probe — would skip elements. Used to check `logmeanexp`'s one-pass contract.
+mutable struct DrainOnce{T}
+    data::Vector{T}
+    pos::Int
+end
+DrainOnce(v) = DrainOnce(collect(v), 0)
+Base.IteratorSize(::Type{<:DrainOnce}) = Base.HasLength()
+Base.length(d::DrainOnce) = length(d.data) - d.pos
+Base.eltype(::Type{DrainOnce{T}}) where {T} = T
+function Base.iterate(d::DrainOnce, _=nothing)
+    d.pos < length(d.data) || return nothing
+    d.pos += 1
+    return d.data[d.pos], nothing
+end
+
 @testset "logmeanexp, logvarexp, logstdexp arrays" begin
     for T in (Float32, Float64)
         X = randn(T, 5, 3, 2)
@@ -119,6 +136,11 @@ end
     @test size(logmeanexp(Eother; dims=1)) == (1, 0)
     @test size(logvarexp(Eother; dims=1)) == (1, 0)
     @test size(logstdexp(Eother; dims=1)) == (1, 0)
+
+    # Single-use iterator that reports a length: logmeanexp must traverse it exactly once
+    # (a length-aware path that re-consumed it would skip the first element).
+    data = randn(7)
+    @test logmeanexp(DrainOnce(data)) ≈ log(mean(exp, data))
 
     # Complex arrays are rejected with a clear ArgumentError on every variance/std path,
     # with or without `dims` (previously the `dims` form threw a confusing MethodError).

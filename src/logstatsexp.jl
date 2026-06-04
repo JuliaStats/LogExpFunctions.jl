@@ -18,14 +18,9 @@ Compute `log(mean(exp, X))` in a numerically stable way.
 `X` should be an iterator of numbers.
 """
 function logmeanexp(X)
-    n = _known_length(X)
-    if isnothing(n)
-        # length not known ahead of time: count during the single pass
-        lse, n = _logsumexp_count(identity, X)
-    else
-        iszero(n) && _throw_empty()
-        lse = logsumexp(X)
-    end
+    # single pass, counting as we go: never traverses `X` twice, so single-use iterators
+    # (and ones that only report a length) are handled correctly.
+    lse, n = _logsumexp_count(identity, X)
     return lse - _log_count(lse, n)
 end
 
@@ -156,10 +151,6 @@ _require_real(x::Real) = x
 _require_real(x) = _throw_not_real()
 _require_real_array(X::AbstractArray{<:Real}) = X
 _require_real_array(X::AbstractArray) = _throw_not_real()
-
-_known_length(X) = _known_length(Base.IteratorSize(typeof(X)), X)
-_known_length(::Union{Base.HasLength,Base.HasShape}, X) = length(X)
-_known_length(_, X) = nothing
 
 # Variance is centered, so we need to traverse the data twice (mean, then deviations).
 # Known re-iterable containers are traversed in place; any other iterator is materialized
