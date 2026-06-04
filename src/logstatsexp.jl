@@ -1,171 +1,204 @@
+# Numerically stable `log`-of-statistics-of-`exp` reductions.
+#
+# Everything here is derived from at most two `logsumexp` accumulators,
+#
+#     lse  = log ∑ᵢ exp(xᵢ)          (first moment)
+#     lse2 = log ∑ᵢ exp(2xᵢ)         (second moment)
+#
+# together with the number of elements `n`. For a general iterator both
+# accumulators are computed in a single pass (important for one-shot iterators
+# such as `Iterators.Stateful`); for an `AbstractArray` we reuse the optimized
+# `logsumexp` and take `n` from `length`, which is cheap.
+
 """
 $(SIGNATURES)
 
-Compute `log(mean(exp, X))`.
+Compute `log(mean(exp, X))` in a numerically stable way.
 
 `X` should be an iterator of numbers.
-The result is computed in a numerically stable way.
 """
 function logmeanexp(X)
-    n = _iterator_length(X)
+    n = _known_length(X)
     if isnothing(n)
-        lse, n = _logsumexp_count(X)
+        # length not known ahead of time: count during the single pass
+        lse, n = _logsumexp_and_count(X)
     else
-        n == 0 && throw(ArgumentError("reducing over an empty collection is not allowed"))
+        iszero(n) && _throw_empty()
         lse = logsumexp(X)
     end
-    return lse - log(_convert_count(lse, n))
+    return lse - _log_count(lse, n)
 end
 
 """
 $(SIGNATURES)
 
-Compute `log.(mean(exp.(X); dims=dims))`.
-
-The result is computed in a numerically stable way.
+Compute `log.(mean(exp.(X); dims=dims))` in a numerically stable way.
 """
 function logmeanexp(X::AbstractArray{<:Number}; dims=:)
-    R = logsumexp(X; dims=dims)
-    n = _reduced_count(X, R)
-    logn = log(_array_count_type(R, n))
-    return R .- logn
+    lse = logsumexp(X; dims=dims)
+    return lse .- _log_count(lse, _reduced_count(X, lse))
 end
 
 """
 $(SIGNATURES)
 
-Compute `log(var(exp, X; corrected=corrected))`.
+Compute `log(var(exp, X; corrected=corrected))` in a numerically stable way.
 
 `X` should be an iterator of real numbers.
-The result is computed in a numerically stable way.
 """
-function logvarexp(X; corrected::Bool=true, logmean=nothing)
-    n = _iterator_length(X)
-    if isnothing(n)
-        R, n = isnothing(logmean) ? _logvariance_terms(X) : _logvariance_terms(X, logmean)
-    else
-        n == 0 && throw(ArgumentError("reducing over an empty collection is not allowed"))
-        R = isnothing(logmean) ? _logvariance_terms_reiterable(X, n) :
-            _logvariance_terms_reiterable(X, n, logmean)
-    end
-    denom = corrected ? n - 1 : n
-    denom == 0 && return oftype(float(R), NaN)
-    return R - log(_convert_count(R, denom))
+function logvarexp(X; corrected::Bool=true)
+    lse, lse2, n = _logmoments(X)
+    return _logvar(lse, lse2, n, corrected)
 end
 
 """
 $(SIGNATURES)
 
-Compute `log.(var(exp.(X); dims=dims, corrected=corrected))`.
-
-The result is computed in a numerically stable way.
+Compute `log.(var(exp.(X); dims=dims, corrected=corrected))` in a numerically stable way.
 """
-function logvarexp(
-    X::AbstractArray{<:Real}; dims=:, corrected::Bool=true, logmean=logmeanexp(X; dims=dims)
-)
-    R = logsumexp(2 * logsubexp.(X, logmean); dims=dims)
-    n = _reduced_count(X, R)
-    denom = corrected ? n - 1 : n
-    denom == 0 && return _nan_like(R)
-    logdenom = log(_array_count_type(R, denom))
-    return R .- logdenom
+function logvarexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true)
+    lse, lse2, n = _logmoments(X, dims)
+    return _logvar(lse, lse2, n, corrected)
 end
 
 """
 $(SIGNATURES)
 
-Compute `log(std(exp, X; corrected=corrected))`.
+Compute `log(std(exp, X; corrected=corrected))` in a numerically stable way.
 
 `X` should be an iterator of real numbers.
-The result is computed in a numerically stable way.
 """
-function logstdexp(X; corrected::Bool=true, logmean=nothing)
-    return logvarexp(X; corrected=corrected, logmean=logmean) / 2
+logstdexp(X; corrected::Bool=true) = logvarexp(X; corrected=corrected) / 2
+
+"""
+$(SIGNATURES)
+
+Compute `log.(std(exp.(X); dims=dims, corrected=corrected))` in a numerically stable way.
+"""
+logstdexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true) =
+    logvarexp(X; dims=dims, corrected=corrected) ./ 2
+
+"""
+$(SIGNATURES)
+
+Compute `(log(mean(exp, X)), log(var(exp, X; corrected=corrected)))` in a numerically
+stable way, using a single pass over the data.
+
+`X` should be an iterator of real numbers.
+"""
+function logmeanexp_and_logvarexp(X; corrected::Bool=true)
+    lse, lse2, n = _logmoments(X)
+    return lse - _log_count(lse, n), _logvar(lse, lse2, n, corrected)
 end
 
 """
 $(SIGNATURES)
 
-Compute `log.(std(exp.(X); dims=dims, corrected=corrected))`.
-
-The result is computed in a numerically stable way.
+Compute `(log.(mean(exp.(X); dims)), log.(var(exp.(X); dims, corrected)))` in a numerically
+stable way.
 """
-function logstdexp(
-    X::AbstractArray{<:Real}; dims=:, corrected::Bool=true, logmean=logmeanexp(X; dims=dims)
-)
-    return logvarexp(X; dims=dims, corrected=corrected, logmean=logmean) / 2
+function logmeanexp_and_logvarexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true)
+    lse, lse2, n = _logmoments(X, dims)
+    return lse .- _log_count(lse, n), _logvar(lse, lse2, n, corrected)
 end
 
-function _logsumexp_count(X)
-    state = iterate(X)
-    state === nothing && throw(ArgumentError("reducing over an empty collection is not allowed"))
-    x, iter_state = state
+"""
+$(SIGNATURES)
+
+Compute `(log(mean(exp, X)), log(std(exp, X; corrected=corrected)))` in a numerically
+stable way, using a single pass over the data.
+
+`X` should be an iterator of real numbers.
+"""
+function logmeanexp_and_logstdexp(X; corrected::Bool=true)
+    logmean, logvar = logmeanexp_and_logvarexp(X; corrected=corrected)
+    return logmean, logvar / 2
+end
+
+"""
+$(SIGNATURES)
+
+Compute `(log.(mean(exp.(X); dims)), log.(std(exp.(X); dims, corrected)))` in a numerically
+stable way.
+"""
+function logmeanexp_and_logstdexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true)
+    logmean, logvar = logmeanexp_and_logvarexp(X; dims=dims, corrected=corrected)
+    return logmean, logvar ./ 2
+end
+
+# ---- internal helpers ----
+
+_throw_empty() = throw(ArgumentError("reducing over an empty collection is not allowed"))
+
+# `log(n)` in the (real) floating point type of `R`, so that no unwanted promotion of
+# `R` (e.g. `Float32` to `Float64`) takes place. Works for scalar and array `R` alike.
+# `n == 0` gives `log(0) == -Inf`, which produces the expected `NaN`/`-Inf` results.
+_log_count(R, n::Integer) = log(convert(real(float(eltype(R))), n))
+
+# number of elements reduced into each entry of `R`
+_reduced_count(X::AbstractArray, R) = length(X) ÷ length(R)
+
+_require_real(x::Real) = x
+_require_real(x) = throw(ArgumentError("logvarexp and logstdexp require real inputs"))
+
+_known_length(X) = _known_length(Base.IteratorSize(typeof(X)), X)
+_known_length(::Union{Base.HasLength,Base.HasShape}, X) = length(X)
+_known_length(_, X) = nothing
+
+# `log(var)` from the raw log-moments. The squared-deviation sum is
+# `∑ᵢ (exp(xᵢ) - mean)² = ∑ᵢ exp(2xᵢ) - (∑ᵢ exp(xᵢ))² / n`, i.e.
+# `logsubexp(lse2, 2 * lse - log(n))` in log space. For a single element
+# (`n - corrected == 0`) the numerator is `-Inf` and `log` of the denominator is also
+# `-Inf`, so the result is `NaN`, matching `var`.
+function _logvar(lse, lse2, n::Integer, corrected::Bool)
+    logn = _log_count(lse2, n)
+    logdenom = _log_count(lse2, corrected ? n - 1 : n)
+    return @. logsubexp(lse2, 2 * lse - logn) - logdenom
+end
+
+# Single pass over a general iterator: (logsumexp(X), count).
+function _logsumexp_and_count(X)
+    next = iterate(X)
+    isnothing(next) && _throw_empty()
+    x, state = next
     acc = x
     n = 1
     while true
-        state = iterate(X, iter_state)
-        state === nothing && break
-        x, iter_state = state
-        n += 1
+        next = iterate(X, state)
+        isnothing(next) && break
+        x, state = next
         acc = _logsumexp_onepass_op(acc, x)
+        n += 1
     end
     return _logsumexp_onepass_result(acc), n
 end
 
-_convert_count(x, n::Integer) = convert(typeof(x), n)
-
-function _logvariance_terms(X)
-    lse, lse2, n = _logsumexp2_count(X)
-    logn = log(_convert_count(lse, n))
-    return logsubexp(lse2, 2lse - logn), n
-end
-function _logvariance_terms_reiterable(X, n::Integer)
-    lse = logsumexp(X)
-    lse2 = logsumexp((2 * _require_real(x) for x in X))
-    logn = log(_convert_count(lse, n))
-    return logsubexp(lse2, 2lse - logn)
-end
-function _logvariance_terms_reiterable(X, n::Integer, logmean)
-    logmean = _require_real(logmean)
-    return logsumexp((2 * logsubexp(_require_real(x), logmean) for x in X))
-end
-function _logvariance_terms(X, logmean)
-    logmean = _require_real(logmean)
-    R, n = _logsumexp_count((2 * logsubexp(_require_real(x), logmean) for x in X))
-    return R, n
-end
-function _logsumexp2_count(X)
-    state = iterate(X)
-    state === nothing && throw(ArgumentError("reducing over an empty collection is not allowed"))
-    x, iter_state = state
+# Single pass over a general iterator of reals: (logsumexp(X), logsumexp(2X), count).
+function _logmoments(X)
+    next = iterate(X)
+    isnothing(next) && _throw_empty()
+    x, state = next
     x = _require_real(x)
     acc = x
     acc2 = 2x
     n = 1
     while true
-        state = iterate(X, iter_state)
-        state === nothing && break
-        x, iter_state = state
+        next = iterate(X, state)
+        isnothing(next) && break
+        x, state = next
         x = _require_real(x)
-        n += 1
         acc = _logsumexp_onepass_op(acc, x)
         acc2 = _logsumexp_onepass_op(acc2, 2x)
+        n += 1
     end
     return _logsumexp_onepass_result(acc), _logsumexp_onepass_result(acc2), n
 end
 
-_reduced_count(X::AbstractArray, R::Number) = length(X)
-_reduced_count(X::AbstractArray, R::AbstractArray) = length(X) ÷ length(R)
-_array_count_type(R::Number, n::Integer) = convert(typeof(R), n)
-_array_count_type(R::AbstractArray{<:Number}, n::Integer) = convert(eltype(R), n)
-_nan_like(R::Number) = oftype(float(R), NaN)
-_nan_like(R::AbstractArray{<:Number}) = fill!(R, convert(eltype(R), NaN))
-
-_iterator_length(X) = _iterator_length(Base.IteratorSize(typeof(X)), X)
-_iterator_length(::Base.HasLength, X) = length(X)
-_iterator_length(::Base.HasShape, X) = length(X)
-_iterator_length(::Base.SizeUnknown, X) = nothing
-_iterator_length(::Any, X) = nothing
-
-_require_real(x::Real) = x
-_require_real(x) = throw(ArgumentError("logvarexp and logstdexp require real inputs"))
+# Array version: reuse the optimized `logsumexp` and take the count from `length`.
+function _logmoments(X::AbstractArray{<:Real}, dims)
+    # full reduction: a single pass avoids allocating the `2 .* X` temporary
+    dims === Colon() && return _logmoments(X)
+    lse = logsumexp(X; dims=dims)
+    lse2 = logsumexp(2 .* X; dims=dims)
+    return lse, lse2, _reduced_count(X, lse)
+end
