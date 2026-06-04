@@ -35,6 +35,7 @@ $(SIGNATURES)
 Compute `log.(mean(exp.(X); dims=dims))` in a numerically stable way.
 """
 function logmeanexp(X::AbstractArray{<:Number}; dims=:)
+    dims isa Colon && isempty(X) && _throw_empty()
     lse = logsumexp(X; dims=dims)
     return lse .- _log_count(lse, _reduced_count(X, lse))
 end
