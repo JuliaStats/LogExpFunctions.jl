@@ -1,10 +1,5 @@
-# Numerically stable `log`-of-statistics-of-`exp` reductions.
-#
-# The mean is `logsumexp(X) - log(n)`. The variance uses the centered formula
-#
-#     log var = logsumexp(2 * logsubexp(xᵢ, logmean)) - log(n - corrected)
-#
-# i.e. the log of the sum of squared deviations `∑ᵢ (exp(xᵢ) - mean)²`, divided by the count.
+# Numerically stable `log`-of-statistics-of-`exp` reductions:
+# logmeanexp, logvarexp, logstdexp.
 
 """
 $(SIGNATURES)
