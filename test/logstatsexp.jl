@@ -70,7 +70,7 @@ end
     @test_throws ArgumentError logvarexp((1.0 + 0.0im, 2.0 + 0.0im))
     @test_throws ArgumentError logstdexp((1.0 + 0.0im, 2.0 + 0.0im))
     @test_throws ArgumentError logmeanexp(())
-    @test_throws ArgumentError logmeanexp(Float64[])
+    @test isnan(logmeanexp(Float64[]))  # empty array mean is NaN, matching `mean`
     @test_throws ArgumentError logvarexp(())
     @test_throws ArgumentError logvarexp(Float64[])
 end
