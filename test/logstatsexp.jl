@@ -1,8 +1,7 @@
 using Test: @test, @test_throws, @testset, @inferred
 using Statistics: mean, std, var
 using OffsetArrays: OffsetArray
-using LogExpFunctions: logmeanexp, logmeanexp!, logstdexp, logvarexp, logvarexp!,
-    logmeanexp_and_logvarexp, logmeanexp_and_logstdexp
+using LogExpFunctions: logmeanexp, logmeanexp!, logstdexp, logvarexp, logvarexp!
 
 # Count heap allocations of `f(x)` after warming it up. `f` and `x` are passed as
 # arguments so that they are concretely typed inside this function (avoiding spurious
@@ -118,7 +117,7 @@ end
     Xconcrete = Float64.(Xabstract)
     @test logvarexp(Xabstract; dims=1) ≈ logvarexp(Xconcrete; dims=1)
     @test logvarexp(Xabstract) ≈ logvarexp(Xconcrete)
-    @test logmeanexp_and_logvarexp(Xabstract; dims=2)[2] ≈ logvarexp(Xconcrete; dims=2)
+    @test logvarexp(Xabstract; dims=2) ≈ logvarexp(Xconcrete; dims=2)
 
     # Empty reduction along the reduced dimension: `var` is NaN (not an error) for every
     # `corrected`, matching `Statistics.var` and `logmeanexp`.
@@ -127,7 +126,6 @@ end
     for corrected in (true, false)
         @test all(isnan, logvarexp(Eredux; dims=1, corrected))
         @test all(isnan, logstdexp(Eredux; dims=1, corrected))
-        @test all(isnan, logmeanexp_and_logvarexp(Eredux; dims=1, corrected)[2])
     end
 
     # Empty along a dimension that is NOT being reduced: the result is an empty array of
@@ -148,56 +146,6 @@ end
     @test_throws ArgumentError logvarexp(C)
     @test_throws ArgumentError logvarexp(C; dims=1)
     @test_throws ArgumentError logstdexp(C; dims=2)
-    @test_throws ArgumentError logmeanexp_and_logvarexp(C; dims=1)
-    @test_throws ArgumentError logmeanexp_and_logstdexp(C; dims=1)
-end
-
-@testset "logmeanexp_and_logvarexp, logmeanexp_and_logstdexp" begin
-    for T in (Float32, Float64)
-        X = randn(T, 5, 3, 2)
-        for dims in (2, (1, 2), :), corrected in (true, false)
-            m, v = logmeanexp_and_logvarexp(X; dims, corrected)
-            @test m ≈ logmeanexp(X; dims)
-            @test v ≈ logvarexp(X; dims, corrected)
-            m2, s = logmeanexp_and_logstdexp(X; dims, corrected)
-            @test m2 ≈ logmeanexp(X; dims)
-            @test s ≈ logstdexp(X; dims, corrected)
-        end
-        # results match the reference statistics directly
-        @test all(logmeanexp_and_logvarexp(X) .≈ (log(mean(exp, X)), log(var(exp.(X)))))
-        @test all(logmeanexp_and_logstdexp(X) .≈ (log(mean(exp, X)), log(std(exp.(X)))))
-    end
-
-    # iterators (single pass, including one-shot iterators)
-    x = randn(Float32, 20)
-    xt = Tuple(x)
-    xe = exp.(x)
-    @test all(@inferred(logmeanexp_and_logvarexp(xt)) .≈ (log(mean(exp, xt)), log(var(xe))))
-    @test all(@inferred(logmeanexp_and_logstdexp(xt)) .≈ (log(mean(exp, xt)), log(std(xe))))
-    @test all(logmeanexp_and_logvarexp(Iterators.Stateful(x)) .≈ (log(mean(exp, x)), log(var(xe))))
-    @test all(logmeanexp_and_logstdexp(Iterators.Stateful(x)) .≈ (log(mean(exp, x)), log(std(xe))))
-
-    # edge cases
-    @test isnan(last(logmeanexp_and_logvarexp((0.0,))))
-    @test isnan(last(logmeanexp_and_logstdexp((0.0,))))
-    @test_throws ArgumentError logmeanexp_and_logvarexp((1.0 + 0.0im,))
-    @test_throws ArgumentError logmeanexp_and_logstdexp((1.0 + 0.0im,))
-end
-
-@testset "type stability and inference" begin
-    X = randn(Float32, 5, 3, 2)
-    xt = Tuple(randn(Float32, 20))
-    for dims in (1, (2, 3), :)
-        @test @inferred(logmeanexp_and_logvarexp(X; dims)) isa Tuple
-        @test @inferred(logmeanexp_and_logstdexp(X; dims)) isa Tuple
-    end
-    @test @inferred(logmeanexp_and_logvarexp(xt)) isa NTuple{2,Float32}
-    @test @inferred(logmeanexp_and_logstdexp(xt)) isa NTuple{2,Float32}
-
-    # no Float64 promotion for Float32 inputs
-    m, v = logmeanexp_and_logvarexp(X; dims=2)
-    @test eltype(m) == Float32 && eltype(v) == Float32
-    @test typeof(@inferred(logmeanexp_and_logvarexp(X))) == Tuple{Float32,Float32}
 end
 
 @testset "in-place logmeanexp!/logvarexp!" begin
@@ -223,8 +171,7 @@ end
     # Full reductions allocate at most a small constant (no per-element / O(n) temporary):
     # the allocation count must not grow with the input size.
     for T in (Float32, Float64)
-        for f in (logmeanexp, logvarexp, logstdexp,
-                  logmeanexp_and_logvarexp, logmeanexp_and_logstdexp)
+        for f in (logmeanexp, logvarexp, logstdexp)
             @test allocations(f, randn(T, 10_000)) == allocations(f, randn(T, 100))
             # `dims` reductions only allocate the (output-sized) result and scratch — never an
             # O(n) temporary — so allocations are independent of the reduced dimension's length.
@@ -271,8 +218,5 @@ end
         # array and one-shot-iterator paths agree even in the cancellation regime
         x = 1.0 .+ 1e-5 .* randn(100)
         @test logvarexp(x) ≈ logvarexp(Iterators.Stateful(x)) rtol = 1e-10
-        m, v = logmeanexp_and_logvarexp(Iterators.Stateful(x))
-        @test m ≈ logmeanexp(x) rtol = 1e-10
-        @test v ≈ logvarexp(x) rtol = 1e-10
     end
 end

@@ -40,33 +40,6 @@ _logmeanexp(X, dims) = logmeanexp!(_reduced_similar(X, dims), X)
 """
 $(SIGNATURES)
 
-Compute `(log(mean(exp, X)), log(var(exp, X; corrected)))` in a numerically stable way.
-Computing the two together is cheaper than calling [`logmeanexp`](@ref) and
-[`logvarexp`](@ref) separately, since the mean is reused to center the variance.
-
-`X` should be an iterator of real numbers. For an array, `dims` selects the dimensions to
-reduce over, returning `(log.(mean(exp.(X); dims)), log.(var(exp.(X); dims, corrected)))`.
-"""
-function logmeanexp_and_logvarexp(X; corrected::Bool=true)
-    xs = _materialize(X)
-    logmean = logmeanexp(xs)
-    logsqdev = _centered_logsqdev(xs, logmean)
-    return logmean, _finish_logvar(logsqdev, length(xs), corrected)
-end
-function logmeanexp_and_logvarexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true)
-    _require_real_array(X)
-    logmean = logmeanexp(X; dims)
-    return logmean, _centered_logvar(X, logmean, dims, corrected)
-end
-
-_centered_logvar(X, logmean, ::Colon, corrected::Bool) =
-    _finish_logvar(_centered_logsqdev(X, logmean), length(X), corrected)
-_centered_logvar(X, logmean, dims, corrected::Bool) =
-    _finish_logvar(logsumexp(_LogSqDev(X, logmean); dims), _reduced_count(X, logmean), corrected)
-
-"""
-$(SIGNATURES)
-
 Compute `log(var(exp, X; corrected))` in a numerically stable way.
 
 `X` should be an iterator of real numbers. For an array, `dims` selects the dimensions to
@@ -74,7 +47,11 @@ reduce over, returning `log.(var(exp.(X); dims, corrected))`.
 
 See also [`logvarexp!`](@ref).
 """
-logvarexp(X; corrected::Bool=true) = last(logmeanexp_and_logvarexp(X; corrected))
+function logvarexp(X; corrected::Bool=true)
+    xs = _materialize(X)
+    logmean = logmeanexp(xs)
+    return _finish_logvar(_centered_logsqdev(xs, logmean), length(xs), corrected)
+end
 logvarexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true) =
     _logvarexp(_require_real_array(X), dims, corrected)
 
@@ -107,29 +84,9 @@ reduce over, returning `log.(std(exp.(X); dims, corrected))`.
 """
 logstdexp(X; corrected::Bool=true) = logvarexp(X; corrected) / 2
 logstdexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true) =
-    _halve(logvarexp(X; dims, corrected))
-
-"""
-$(SIGNATURES)
-
-Compute `(log(mean(exp, X)), log(std(exp, X; corrected)))` in a numerically stable way,
-reusing the mean to center the variance.
-
-`X` should be an iterator of real numbers. For an array, `dims` selects the dimensions to
-reduce over, returning `(log.(mean(exp.(X); dims)), log.(std(exp.(X); dims, corrected)))`.
-"""
-function logmeanexp_and_logstdexp(X; corrected::Bool=true)
-    logmean, logvar = logmeanexp_and_logvarexp(X; corrected)
-    return logmean, logvar / 2
-end
-function logmeanexp_and_logstdexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true)
-    logmean, logvar = logmeanexp_and_logvarexp(X; dims, corrected)
-    return logmean, _halve(logvar)
-end
+    _halve!(logvarexp(X; dims, corrected))
 
 # ---- internal helpers ----
-
-_throw_empty() = throw(ArgumentError("reducing over an empty collection is not allowed"))
 
 # `log(n)` in the (real) float type of `R`, avoiding promotion (e.g. `Float32` to `Float64`).
 # Works for scalar and array `R`; `n == 0` gives `-Inf`, yielding the expected `NaN`/`-Inf`.
@@ -141,8 +98,8 @@ _reduced_count(X::AbstractArray, R) = isempty(R) ? 0 : length(X) ÷ length(R)
 # output array for a reduction of `X` over `dims` (singleton along the reduced dimensions)
 _reduced_similar(X, dims) = similar(X, float(eltype(X)), Base.reduced_indices(axes(X), dims))
 
-_halve(v::Number) = v / 2
-_halve(v::AbstractArray) = v ./= 2
+_halve!(v::Number) = v / 2
+_halve!(v::AbstractArray) = v ./= 2
 
 # variance/std require real inputs; reject a non-real element type up front for a clean error
 _throw_not_real() = throw(ArgumentError("logvarexp and logstdexp require real inputs"))
@@ -170,7 +127,7 @@ end
 # one pass over an iterator, returning `(logsumexp(f(xᵢ)), count)`
 function _logsumexp_count(f, X)
     next = iterate(X)
-    isnothing(next) && _throw_empty()
+    isnothing(next) && throw(ArgumentError("reducing over an empty collection is not allowed"))
     x, state = next
     acc = f(x)
     n = 1

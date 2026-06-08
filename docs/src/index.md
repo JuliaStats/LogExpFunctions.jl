@@ -43,6 +43,4 @@ logmeanexp!
 logvarexp
 logvarexp!
 logstdexp
-logmeanexp_and_logvarexp
-logmeanexp_and_logstdexp
 ```
