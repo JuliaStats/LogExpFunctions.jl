@@ -30,12 +30,12 @@ end
     for T in (Float32, Float64)
         X = randn(T, 5, 3, 2)
         for dims in (2, (1, 2), :)
-            @test logmeanexp(X; dims=dims) ≈ log.(mean(exp.(X); dims=dims))
+            @test logmeanexp(X; dims) ≈ log.(mean(exp.(X); dims))
             for corrected in (true, false)
-                @test logvarexp(X; dims=dims, corrected=corrected) ≈
-                    log.(var(exp.(X); dims=dims, corrected=corrected))
-                @test logstdexp(X; dims=dims, corrected=corrected) ≈
-                    log.(std(exp.(X); dims=dims, corrected=corrected))
+                @test logvarexp(X; dims, corrected) ≈
+                    log.(var(exp.(X); dims, corrected))
+                @test logstdexp(X; dims, corrected) ≈
+                    log.(std(exp.(X); dims, corrected))
             end
         end
         @test @inferred(logmeanexp(X)) ≈ log(mean(exp, X))
@@ -79,9 +79,9 @@ end
     X = randn(Float32, 5, 3, 2)
 
     for dims in (1, (2, 3))
-        @test eltype(@inferred(logmeanexp(X; dims=dims))) == Float32
-        @test eltype(@inferred(logvarexp(X; dims=dims))) == Float32
-        @test eltype(@inferred(logstdexp(X; dims=dims))) == Float32
+        @test eltype(@inferred(logmeanexp(X; dims))) == Float32
+        @test eltype(@inferred(logvarexp(X; dims))) == Float32
+        @test eltype(@inferred(logstdexp(X; dims))) == Float32
     end
 
     @test typeof(@inferred(logmeanexp(X; dims=:))) == Float32
@@ -103,12 +103,12 @@ end
     base = randn(4, 3)
     oa = OffsetArray(base, -1, -1)
     for dims in (1, 2, :)
-        @test collect(logmeanexp(oa; dims=dims)) ≈ collect(logmeanexp(base; dims=dims))
+        @test collect(logmeanexp(oa; dims)) ≈ collect(logmeanexp(base; dims))
         for corrected in (true, false)
-            @test collect(logvarexp(oa; dims=dims, corrected=corrected)) ≈
-                collect(logvarexp(base; dims=dims, corrected=corrected))
-            @test collect(logstdexp(oa; dims=dims, corrected=corrected)) ≈
-                collect(logstdexp(base; dims=dims, corrected=corrected))
+            @test collect(logvarexp(oa; dims, corrected)) ≈
+                collect(logvarexp(base; dims, corrected))
+            @test collect(logstdexp(oa; dims, corrected)) ≈
+                collect(logstdexp(base; dims, corrected))
         end
     end
 
@@ -125,9 +125,9 @@ end
     Eredux = Matrix{Float64}(undef, 0, 3)
     @test all(isnan, logmeanexp(Eredux; dims=1))
     for corrected in (true, false)
-        @test all(isnan, logvarexp(Eredux; dims=1, corrected=corrected))
-        @test all(isnan, logstdexp(Eredux; dims=1, corrected=corrected))
-        @test all(isnan, logmeanexp_and_logvarexp(Eredux; dims=1, corrected=corrected)[2])
+        @test all(isnan, logvarexp(Eredux; dims=1, corrected))
+        @test all(isnan, logstdexp(Eredux; dims=1, corrected))
+        @test all(isnan, logmeanexp_and_logvarexp(Eredux; dims=1, corrected)[2])
     end
 
     # Empty along a dimension that is NOT being reduced: the result is an empty array of
@@ -156,12 +156,12 @@ end
     for T in (Float32, Float64)
         X = randn(T, 5, 3, 2)
         for dims in (2, (1, 2), :), corrected in (true, false)
-            m, v = logmeanexp_and_logvarexp(X; dims=dims, corrected=corrected)
-            @test m ≈ logmeanexp(X; dims=dims)
-            @test v ≈ logvarexp(X; dims=dims, corrected=corrected)
-            m2, s = logmeanexp_and_logstdexp(X; dims=dims, corrected=corrected)
-            @test m2 ≈ logmeanexp(X; dims=dims)
-            @test s ≈ logstdexp(X; dims=dims, corrected=corrected)
+            m, v = logmeanexp_and_logvarexp(X; dims, corrected)
+            @test m ≈ logmeanexp(X; dims)
+            @test v ≈ logvarexp(X; dims, corrected)
+            m2, s = logmeanexp_and_logstdexp(X; dims, corrected)
+            @test m2 ≈ logmeanexp(X; dims)
+            @test s ≈ logstdexp(X; dims, corrected)
         end
         # results match the reference statistics directly
         @test all(logmeanexp_and_logvarexp(X) .≈ (log(mean(exp, X)), log(var(exp.(X)))))
@@ -188,8 +188,8 @@ end
     X = randn(Float32, 5, 3, 2)
     xt = Tuple(randn(Float32, 20))
     for dims in (1, (2, 3), :)
-        @test @inferred(logmeanexp_and_logvarexp(X; dims=dims)) isa Tuple
-        @test @inferred(logmeanexp_and_logstdexp(X; dims=dims)) isa Tuple
+        @test @inferred(logmeanexp_and_logvarexp(X; dims)) isa Tuple
+        @test @inferred(logmeanexp_and_logstdexp(X; dims)) isa Tuple
     end
     @test @inferred(logmeanexp_and_logvarexp(xt)) isa NTuple{2,Float32}
     @test @inferred(logmeanexp_and_logstdexp(xt)) isa NTuple{2,Float32}
@@ -206,11 +206,11 @@ end
         for A in (X, OffsetArray(X, -2, -1)), dims in (1, 2, (1, 2))
             out = similar(A, T, Base.reduced_indices(axes(A), dims))
             @test logmeanexp!(out, A) === out
-            @test out ≈ logmeanexp(A; dims=dims)
+            @test out ≈ logmeanexp(A; dims)
             for corrected in (true, false)
                 outv = similar(A, T, Base.reduced_indices(axes(A), dims))
-                @test logvarexp!(outv, A; corrected=corrected) === outv
-                @test outv ≈ logvarexp(A; dims=dims, corrected=corrected)
+                @test logvarexp!(outv, A; corrected) === outv
+                @test outv ≈ logvarexp(A; dims, corrected)
             end
         end
     end
@@ -249,7 +249,7 @@ end
     # values large/small enough that exp would over-/under-flow Float64.
     setprecision(BigFloat, 256) do
         refmean(x) = Float64(log(mean(exp.(big.(x)))))
-        refvar(x; corrected=true) = Float64(log(var(exp.(big.(x)); corrected=corrected)))
+        refvar(x; corrected=true) = Float64(log(var(exp.(big.(x)); corrected)))
         cases = (
             1.0 .+ 1e-3 .* randn(500),   # tight cluster
             1.0 .+ 1e-6 .* randn(500),   # very tight: var ≪ mean²
@@ -264,8 +264,8 @@ end
             # an inherent cancellation makes the relative error meaningless
             @test logmeanexp(x) ≈ refmean(x) rtol = 1e-9 atol = 1e-10
             for corrected in (true, false)
-                @test logvarexp(x; corrected=corrected) ≈ refvar(x; corrected=corrected) rtol = 1e-8 atol = 1e-9
-                @test logstdexp(x; corrected=corrected) ≈ refvar(x; corrected=corrected) / 2 rtol = 1e-8 atol = 1e-9
+                @test logvarexp(x; corrected) ≈ refvar(x; corrected) rtol = 1e-8 atol = 1e-9
+                @test logstdexp(x; corrected) ≈ refvar(x; corrected) / 2 rtol = 1e-8 atol = 1e-9
             end
         end
         # array and one-shot-iterator paths agree even in the cancellation regime
