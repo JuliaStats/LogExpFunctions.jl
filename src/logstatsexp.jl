@@ -52,8 +52,8 @@ function logvarexp(X; corrected::Bool=true)
     logmean = logmeanexp(xs)
     return _finish_logvar(_centered_logsqdev(xs, logmean), length(xs), corrected)
 end
-logvarexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true) =
-    _logvarexp(_require_real_array(X), dims, corrected)
+logvarexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true) = _logvarexp(X, dims, corrected)
+logvarexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true) = _throw_not_real()
 
 """
 $(SIGNATURES)
@@ -61,17 +61,16 @@ $(SIGNATURES)
 Compute [`logvarexp`](@ref) of `X` over the singleton dimensions of `out`, and write the
 result to `out`.
 """
-function logvarexp!(out::AbstractArray, X::AbstractArray{<:Number}; corrected::Bool=true)
-    _require_real_array(X)
+function logvarexp!(out::AbstractArray, X::AbstractArray{<:Real}; corrected::Bool=true)
     logmeanexp!(out, X)
     n = _reduced_count(X, out)
     logsumexp!(out, _LogSqDev(X, out))
     out .-= _log_count(out, max(0, corrected ? n - 1 : n))
     return out
 end
+logvarexp!(out::AbstractArray, X::AbstractArray{<:Number}; corrected::Bool=true) = _throw_not_real()
 
-_logvarexp(X, ::Colon, corrected::Bool) =
-    _finish_logvar(_centered_logsqdev(X, logmeanexp(X)), length(X), corrected)
+_logvarexp(X, ::Colon, corrected::Bool) = _finish_logvar(_centered_logsqdev(X, logmeanexp(X)), length(X), corrected)
 _logvarexp(X, dims, corrected::Bool) = logvarexp!(_reduced_similar(X, dims), X; corrected)
 
 """
@@ -88,40 +87,24 @@ logstdexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true) =
 
 # ---- internal helpers ----
 
-# `log(n)` in the (real) float type of `R`, avoiding promotion (e.g. `Float32` to `Float64`).
-# Works for scalar and array `R`; `n == 0` gives `-Inf`, yielding the expected `NaN`/`-Inf`.
 _log_count(R, n::Integer) = log(convert(real(float(eltype(R))), n))
-
-# number of elements reduced into each entry of `R` (empty `R` ⇒ 0, avoiding division by zero)
 _reduced_count(X::AbstractArray, R) = isempty(R) ? 0 : length(X) ÷ length(R)
-
-# output array for a reduction of `X` over `dims` (singleton along the reduced dimensions)
 _reduced_similar(X, dims) = similar(X, float(eltype(X)), Base.reduced_indices(axes(X), dims))
 
 _halve!(v::Number) = v / 2
 _halve!(v::AbstractArray) = v ./= 2
 
-# variance/std require real inputs; reject a non-real element type up front for a clean error
 _throw_not_real() = throw(ArgumentError("logvarexp and logstdexp require real inputs"))
-_require_real(x::Real) = x
-_require_real(x) = _throw_not_real()
-_require_real_array(X::AbstractArray{<:Real}) = X
-_require_real_array(X::AbstractArray) = _throw_not_real()
 
-# re-iterable containers are traversed in place; any other iterator is collected once, so that
-# single-use iterators (e.g. `Iterators.Stateful`) survive the variance's two passes
 _materialize(X) = collect(X)
 _materialize(X::Union{AbstractArray,Tuple,NamedTuple,AbstractRange}) = X
 
-# `log((exp(xᵢ) - mean)^2) = 2 * logsubexp(xᵢ, logmean)`, the term summed for the variance
-_logsqdev_term(x, logmean) = 2 * logsubexp(_require_real(x), logmean)
+_logsqdev_term(x::Real, logmean) = 2 * logsubexp(x, logmean)
+_logsqdev_term(x, logmean) = _throw_not_real()
 _centered_logsqdev(X, logmean) = first(_logsumexp_count(Base.Fix2(_logsqdev_term, logmean), X))
 
-function _finish_logvar(logsqdev, n::Integer, corrected::Bool)
-    c = _log_count(logsqdev, max(0, corrected ? n - 1 : n))
-    logsqdev isa Number && return logsqdev - c
-    logsqdev .-= c
-    return logsqdev
+function _finish_logvar(logsqdev::Number, n::Integer, corrected::Bool)
+    return logsqdev - oftype(logsqdev, log(max(0, n - corrected)))
 end
 
 # one pass over an iterator, returning `(logsumexp(f(xᵢ)), count)`
