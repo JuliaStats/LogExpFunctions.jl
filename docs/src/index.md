@@ -39,7 +39,9 @@ logitexp
 log1mlogistic
 logit1mexp
 logmeanexp
+logmeanexp!
 logvarexp
+logvarexp!
 logstdexp
 logmeanexp_and_logvarexp
 logmeanexp_and_logstdexp

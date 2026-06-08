@@ -1,7 +1,7 @@
 using Test: @test, @test_throws, @testset, @inferred
 using Statistics: mean, std, var
 using OffsetArrays: OffsetArray
-using LogExpFunctions: logmeanexp, logstdexp, logvarexp,
+using LogExpFunctions: logmeanexp, logmeanexp!, logstdexp, logvarexp, logvarexp!,
     logmeanexp_and_logvarexp, logmeanexp_and_logstdexp
 
 # Count heap allocations of `f(x)` after warming it up. `f` and `x` are passed as
@@ -200,6 +200,25 @@ end
     @test typeof(@inferred(logmeanexp_and_logvarexp(X))) == Tuple{Float32,Float32}
 end
 
+@testset "in-place logmeanexp!/logvarexp!" begin
+    for T in (Float32, Float64)
+        X = randn(T, 6, 4)
+        for A in (X, OffsetArray(X, -2, -1)), dims in (1, 2, (1, 2))
+            out = similar(A, T, Base.reduced_indices(axes(A), dims))
+            @test logmeanexp!(out, A) === out
+            @test out ≈ logmeanexp(A; dims=dims)
+            for corrected in (true, false)
+                outv = similar(A, T, Base.reduced_indices(axes(A), dims))
+                @test logvarexp!(outv, A; corrected=corrected) === outv
+                @test outv ≈ logvarexp(A; dims=dims, corrected=corrected)
+            end
+        end
+    end
+    Xabstract = Real[1.0 2.0 3.0; 4.0 5.0 6.0]
+    @test logvarexp!(Matrix{Float64}(undef, 1, 3), Xabstract) ≈ logvarexp(Float64.(Xabstract); dims=1)
+    @test_throws ArgumentError logvarexp!(Matrix{ComplexF64}(undef, 1, 2), ComplexF64[1 2; 3 4])
+end
+
 @testset "allocations" begin
     # Full reductions allocate at most a small constant (no per-element / O(n) temporary):
     # the allocation count must not grow with the input size.
@@ -207,10 +226,20 @@ end
         for f in (logmeanexp, logvarexp, logstdexp,
                   logmeanexp_and_logvarexp, logmeanexp_and_logstdexp)
             @test allocations(f, randn(T, 10_000)) == allocations(f, randn(T, 100))
+            # `dims` reductions only allocate the (output-sized) result and scratch — never an
+            # O(n) temporary — so allocations are independent of the reduced dimension's length.
+            g = X -> f(X; dims=1)
+            @test allocations(g, randn(T, 10_000, 3)) == allocations(g, randn(T, 100, 3))
         end
         # genuinely allocation-free paths
         @test allocations(logmeanexp, randn(T, 10_000)) == 0
         @test allocations(logvarexp, Tuple(randn(T, 20))) == 0
+        # in-place reductions reuse `out`, so their allocation does not grow with the input
+        out = Matrix{T}(undef, 1, 3)
+        @test allocations(X -> logmeanexp!(out, X), randn(T, 10_000, 3)) ==
+              allocations(X -> logmeanexp!(out, X), randn(T, 100, 3))
+        @test allocations(X -> logvarexp!(out, X), randn(T, 10_000, 3)) ==
+              allocations(X -> logvarexp!(out, X), randn(T, 100, 3))
     end
 end
 
