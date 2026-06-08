@@ -38,7 +38,7 @@ end
 """
 $(SIGNATURES)
 
-Compute `(log(mean(exp, X)), log(var(exp, X; corrected=corrected)))` in a numerically
+Compute `(log(mean(exp, X)), log(var(exp, X; corrected)))` in a numerically
 stable way. Computing the two together is cheaper than calling [`logmeanexp`](@ref) and
 [`logvarexp`](@ref) separately, since the mean is reused to center the variance.
 
