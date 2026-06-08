@@ -27,7 +27,7 @@ end
 """
 $(SIGNATURES)
 
-Compute `log.(mean(exp.(X); dims=dims))` in a numerically stable way.
+Compute `log.(mean(exp.(X); dims))` in a numerically stable way.
 """
 function logmeanexp(X::AbstractArray{<:Number}; dims=:)
     dims isa Colon && isempty(X) && _throw_empty()
