@@ -135,7 +135,7 @@ end
     @test_throws Exception logstdexp(C; dims=2)
 end
 
-@testset "in-place logmeanexp!/logvarexp!" begin
+@testset "in-place logmeanexp!/logvarexp!/logstdexp!" begin
     for T in (Float32, Float64)
         X = randn(T, 6, 4)
         for A in (X, OffsetArray(X, -2, -1)), dims in (1, 2, (1, 2))
@@ -146,12 +146,17 @@ end
                 outv = similar(A, T, Base.reduced_indices(axes(A), dims))
                 @test logvarexp!(outv, A; corrected) === outv
                 @test outv ≈ logvarexp(A; dims, corrected)
+                outs = similar(A, T, Base.reduced_indices(axes(A), dims))
+                @test logstdexp!(outs, A; corrected) === outs
+                @test outs ≈ logstdexp(A; dims, corrected)
             end
         end
     end
     Xabstract = Real[1.0 2.0 3.0; 4.0 5.0 6.0]
     @test logvarexp!(Matrix{Float64}(undef, 1, 3), Xabstract) ≈ logvarexp(Float64.(Xabstract); dims=1)
+    @test logstdexp!(Matrix{Float64}(undef, 1, 3), Xabstract) ≈ logstdexp(Float64.(Xabstract); dims=1)
     @test_throws Exception logvarexp!(Matrix{ComplexF64}(undef, 1, 2), ComplexF64[1 2; 3 4])
+    @test_throws Exception logstdexp!(Matrix{ComplexF64}(undef, 1, 2), ComplexF64[1 2; 3 4])
 end
 
 @testset "allocations" begin
