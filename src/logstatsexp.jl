@@ -45,7 +45,7 @@ function logvarexp(X; corrected::Bool=true)
     xs = collect(X)
     return _finish_logvar(_centered_logsqdev(xs, logmeanexp(xs)), length(xs), corrected)
 end
-logvarexp(X::Union{Tuple,NamedTuple,AbstractRange}; corrected::Bool=true) = _logvarexp(X, :, corrected)
+logvarexp(X::Union{Tuple,NamedTuple}; corrected::Bool=true) = _logvarexp(X, :, corrected)
 logvarexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true) = _logvarexp(X, dims, corrected)
 logvarexp(X::AbstractArray; dims=:, corrected::Bool=true) = _throw_not_real()
 _logvarexp(X, ::Colon, corrected::Bool) = _finish_logvar(_centered_logsqdev(X, logmeanexp(X)), length(X), corrected)
