@@ -66,7 +66,7 @@ result to `out`.
 """
 function logvarexp!(out::AbstractArray{<:Real}, X::AbstractArray{<:Real}; corrected::Bool=true)
     logmeanexp!(out, X)
-    logsumexp!(out, 2logsubexp.(X, out))
+    logsumexp!(out, 2 .* logsubexp.(X, out))
     return out .-= log(max(0, length(X) / length(out) - corrected))
 end
 
@@ -76,7 +76,7 @@ $(SIGNATURES)
 
 Compute `log(std(exp, X; dims, corrected))` in a numerically stable way.
 """
-logstdexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true) = logvarexp(X; dims, corrected) / 2
+logstdexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true, logmean=logmeanexp(X; dims)) = logvarexp(X; dims, corrected, logmean) / 2
 
 
 """
@@ -91,7 +91,7 @@ function logstdexp!(out::AbstractArray{<:Real}, X::AbstractArray{<:Real}; correc
 end
 
 
-# internal function to do logsumexp over an iterator in one pass, returning returning also its length
+# internal function to do logsumexp over an iterator in one pass, returning also its length
 function _logsumexp_count(X)
     next = iterate(X)
     if isnothing(next)
