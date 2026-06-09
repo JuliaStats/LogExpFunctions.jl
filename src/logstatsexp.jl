@@ -91,9 +91,7 @@ _logsqdev_term(x::Real, logmean) = 2 * logsubexp(x, logmean)
 _logsqdev_term(x, logmean) = _throw_not_real()
 _centered_logsqdev(X, logmean) = first(_logsumexp_count(Base.Fix2(_logsqdev_term, logmean), X))
 
-function _finish_logvar(logsqdev::Number, n::Integer, corrected::Bool)
-    return logsqdev - oftype(logsqdev, log(max(0, n - corrected)))
-end
+_finish_logvar(logsqdev::Number, n::Integer, corrected::Bool) = logsqdev - oftype(logsqdev, log(max(0, n - corrected)))
 
 # one pass over an iterator, returning `(logsumexp(f(xᵢ)), count)`
 function _logsumexp_count(f, X)
