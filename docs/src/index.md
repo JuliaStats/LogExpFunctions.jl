@@ -43,4 +43,5 @@ logmeanexp!
 logvarexp
 logvarexp!
 logstdexp
+logstdexp!
 ```
