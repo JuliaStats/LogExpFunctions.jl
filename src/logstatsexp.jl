@@ -40,20 +40,21 @@ end
 """
 $(SIGNATURES)
 
-Compute `log(var(exp, X; corrected))` in a numerically stable way.
+Compute `log(var(exp.(X); corrected))` in a numerically stable way.
 
 `X` should be an array of real numbers; `dims` selects the dimensions to reduce over,
-returning `log.(var(exp.(X); dims, corrected))`.
+returning `log.(var(exp.(X); dims, corrected))`. A precomputed `logmeanexp(X; dims)` can be
+passed as `logmean` to avoid recomputing it.
 
 See also [`logvarexp!`](@ref).
 """
 logvarexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true, logmean=logmeanexp(X; dims)) = _logvarexp(X, dims, corrected, logmean)
 function _logvarexp(X::AbstractArray{<:Real}, dims::Colon, corrected::Bool, logmean)
-    out = logsumexp(2logsubexp.(X, logmean))
+    out = logsumexp(2 .* logsubexp.(X, logmean))
     return out - oftype(out, log(max(0, length(X) - corrected)))
 end
 function _logvarexp(X::AbstractArray{<:Real}, dims, corrected::Bool, logmean)
-    out = logsumexp(2logsubexp.(X, logmean); dims)
+    out = logsumexp(2 .* logsubexp.(X, logmean); dims)
     return out .-= log(max(0, length(X) / length(out) - corrected))
 end
 
@@ -74,7 +75,9 @@ end
 """
 $(SIGNATURES)
 
-Compute `log(std(exp, X; dims, corrected))` in a numerically stable way.
+Compute `log(std(exp.(X); dims, corrected))` in a numerically stable way.
+
+Keyword arguments are as in [`logvarexp`](@ref).
 """
 logstdexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true, logmean=logmeanexp(X; dims)) = logvarexp(X; dims, corrected, logmean) / 2
 
@@ -94,19 +97,16 @@ end
 # internal function to do logsumexp over an iterator in one pass, returning also its length
 function _logsumexp_count(X)
     next = iterate(X)
-    if isnothing(next)
-        throw(ArgumentError("reducing over an empty collection is not allowed"))
-    else
+    isnothing(next) && throw(ArgumentError("reducing over an empty collection is not allowed"))
+    x, state = next
+    acc = x
+    n = 1
+    while true
+        next = iterate(X, state)
+        isnothing(next) && break
         x, state = next
-        acc = x
-        n = 1
-        while true
-            next = iterate(X, state)
-            isnothing(next) && break
-            x, state = next
-            acc = _logsumexp_onepass_op(acc, x)
-            n += 1
-        end
-        return _logsumexp_onepass_result(acc), n
+        acc = _logsumexp_onepass_op(acc, x)
+        n += 1
     end
+    return _logsumexp_onepass_result(acc), n
 end

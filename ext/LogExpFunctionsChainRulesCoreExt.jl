@@ -152,66 +152,54 @@ function ChainRulesCore.rrule(::typeof(logsumexp), x::AbstractArray{<:Real}; dim
 end
 
 function ChainRulesCore.frule((_, Δx), ::typeof(logmeanexp), x::AbstractArray{<:Real}; dims=:)
-    Ω = logmeanexp(x; dims=dims)
+    Ω = logmeanexp(x; dims)
     n = length(x) ÷ length(Ω)
-    ΔΩ = sum(exp.(x .- Ω) .* Δx; dims=dims) ./ n
+    ΔΩ = sum(exp.(x .- Ω) .* Δx; dims) ./ n
     return Ω, ΔΩ
 end
 function ChainRulesCore.rrule(::typeof(logmeanexp), x::AbstractArray{<:Real}; dims=:)
-    Ω = logmeanexp(x; dims=dims)
+    Ω = logmeanexp(x; dims)
     n = length(x) ÷ length(Ω)
-    ∂x = exp.(x .- Ω) ./ n
-    project_x = ChainRulesCore.ProjectTo(x)
-    function logmeanexp_pullback(Ω̄)
-        x̄ = ChainRulesCore.InplaceableThunk(
-            Δ -> Δ .+= Ω̄ .* ∂x,
-            ChainRulesCore.@thunk(project_x(Ω̄ .* ∂x)),
-        )
-        return ChainRulesCore.NoTangent(), x̄
-    end
-    return Ω, logmeanexp_pullback
+    return Ω, _∂x_pullback(exp.(x .- Ω) ./ n, x)
 end
 
 function ChainRulesCore.frule((_, Δx), ::typeof(logvarexp), x::AbstractArray{<:Real}; dims=:, corrected::Bool=true)
-    Ω = logvarexp(x; dims=dims, corrected=corrected)
-    ΔΩ = sum(_∂x_logvarexp(x, dims) .* Δx; dims=dims)
+    logmean = logmeanexp(x; dims)
+    Ω = logvarexp(x; dims, corrected, logmean)
+    ΔΩ = sum(_∂x_logvarexp(x, logmean, dims) .* Δx; dims)
     return Ω, ΔΩ
 end
 function ChainRulesCore.rrule(::typeof(logvarexp), x::AbstractArray{<:Real}; dims=:, corrected::Bool=true)
-    Ω = logvarexp(x; dims=dims, corrected=corrected)
-    ∂x = _∂x_logvarexp(x, dims)
-    project_x = ChainRulesCore.ProjectTo(x)
-    function logvarexp_pullback(Ω̄)
-        x̄ = ChainRulesCore.InplaceableThunk(
-            Δ -> Δ .+= Ω̄ .* ∂x,
-            ChainRulesCore.@thunk(project_x(Ω̄ .* ∂x)),
-        )
-        return ChainRulesCore.NoTangent(), x̄
-    end
-    return Ω, logvarexp_pullback
+    logmean = logmeanexp(x; dims)
+    Ω = logvarexp(x; dims, corrected, logmean)
+    return Ω, _∂x_pullback(_∂x_logvarexp(x, logmean, dims), x)
 end
 function ChainRulesCore.frule((_, Δx), ::typeof(logstdexp), x::AbstractArray{<:Real}; dims=:, corrected::Bool=true)
-    Ω = logstdexp(x; dims=dims, corrected=corrected)
-    ΔΩ = sum((_∂x_logvarexp(x, dims) ./ 2) .* Δx; dims=dims)
+    logmean = logmeanexp(x; dims)
+    Ω = logstdexp(x; dims, corrected, logmean)
+    ΔΩ = sum(_∂x_logvarexp(x, logmean, dims) ./ 2 .* Δx; dims)
     return Ω, ΔΩ
 end
 function ChainRulesCore.rrule(::typeof(logstdexp), x::AbstractArray{<:Real}; dims=:, corrected::Bool=true)
-    Ω = logstdexp(x; dims=dims, corrected=corrected)
-    ∂x = _∂x_logvarexp(x, dims) ./ 2
+    logmean = logmeanexp(x; dims)
+    Ω = logstdexp(x; dims, corrected, logmean)
+    return Ω, _∂x_pullback(_∂x_logvarexp(x, logmean, dims) / 2, x)
+end
+function _∂x_logvarexp(x::AbstractArray{<:Real}, logmean, dims)
+    d = x .- logmean
+    e = expm1.(d)
+    return (2 .* exp.(d) .* e) ./ sum(abs2, e; dims)
+end
+function _∂x_pullback(∂x, x)
     project_x = ChainRulesCore.ProjectTo(x)
-    function logstdexp_pullback(Ω̄)
+    function pullback(Ω̄)
         x̄ = ChainRulesCore.InplaceableThunk(
             Δ -> Δ .+= Ω̄ .* ∂x,
             ChainRulesCore.@thunk(project_x(Ω̄ .* ∂x)),
         )
         return ChainRulesCore.NoTangent(), x̄
     end
-    return Ω, logstdexp_pullback
-end
-function _∂x_logvarexp(x::AbstractArray{<:Real}, dims)
-    d = x .- logmeanexp(x; dims=dims)
-    e = expm1.(d)
-    return (2 .* exp.(d) .* e) ./ sum(abs2, e; dims=dims)
+    return pullback
 end
 
 # no rules for mutating functions currently:
