@@ -113,6 +113,18 @@
         test_rrule(logsumexp, x; fkwargs=(dims=dims,))
     end
 
+    for x in (randn(10), randn(10, 8)), dims in (:, 1, 1:2, 2)
+        dims isa Colon || all(d <= ndims(x) for d in dims) || continue
+        test_frule(logmeanexp, x; fkwargs=(dims=dims,))
+        test_rrule(logmeanexp, x; fkwargs=(dims=dims,))
+        for corrected in (true, false)
+            test_frule(logvarexp, x; fkwargs=(dims=dims, corrected=corrected))
+            test_rrule(logvarexp, x; fkwargs=(dims=dims, corrected=corrected))
+            test_frule(logstdexp, x; fkwargs=(dims=dims, corrected=corrected))
+            test_rrule(logstdexp, x; fkwargs=(dims=dims, corrected=corrected))
+        end
+    end
+
     for x in (randn(10), randn(10, 8))
         test_frule(softmax, x)
         test_rrule(softmax, x)
