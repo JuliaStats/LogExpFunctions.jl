@@ -16,6 +16,8 @@ function logmeanexp(X)
     return lse - log(oftype(lse, n))
 end
 logmeanexp(X::AbstractArray{<:Number}; dims=:) = _logmeanexp(X, dims)
+_logmeanexp(X, ::Colon) = (lse = logsumexp(X); lse - log(oftype(lse, length(X))))
+_logmeanexp(X, dims) = logmeanexp!(_reduced_similar(X, dims), X)
 
 """
 $(SIGNATURES)
@@ -25,12 +27,9 @@ result to `out`.
 """
 function logmeanexp!(out::AbstractArray, X::AbstractArray{<:Number})
     logsumexp!(out, X)
-    out .-= _log_count(out, _reduced_count(X, out))
-    return out
+    return out .-= log(_reduced_count(X, out))
 end
 
-_logmeanexp(X, ::Colon) = (lse = logsumexp(X); lse - _log_count(lse, length(X)))
-_logmeanexp(X, dims) = logmeanexp!(_reduced_similar(X, dims), X)
 
 """
 $(SIGNATURES)
@@ -43,12 +42,14 @@ reduce over, returning `log.(var(exp.(X); dims, corrected))`.
 See also [`logvarexp!`](@ref).
 """
 function logvarexp(X; corrected::Bool=true)
-    xs = _materialize(X)
-    logmean = logmeanexp(xs)
-    return _finish_logvar(_centered_logsqdev(xs, logmean), length(xs), corrected)
+    xs = collect(X)
+    return _finish_logvar(_centered_logsqdev(xs, logmeanexp(xs)), length(xs), corrected)
 end
+logvarexp(X::Union{Tuple,NamedTuple,AbstractRange}; corrected::Bool=true) = _logvarexp(X, :, corrected)
 logvarexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true) = _logvarexp(X, dims, corrected)
-logvarexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true) = _throw_not_real()
+logvarexp(X::AbstractArray; dims=:, corrected::Bool=true) = _throw_not_real()
+_logvarexp(X, ::Colon, corrected::Bool) = _finish_logvar(_centered_logsqdev(X, logmeanexp(X)), length(X), corrected)
+_logvarexp(X, dims, corrected::Bool) = logvarexp!(_reduced_similar(X, dims), X; corrected)
 
 """
 $(SIGNATURES)
@@ -58,15 +59,12 @@ result to `out`.
 """
 function logvarexp!(out::AbstractArray, X::AbstractArray{<:Real}; corrected::Bool=true)
     logmeanexp!(out, X)
-    n = _reduced_count(X, out)
     logsumexp!(out, _LogSqDev(X, out))
-    out .-= _log_count(out, max(0, corrected ? n - 1 : n))
+    out .-= log(max(0, _reduced_count(X, out) - corrected))
     return out
 end
 logvarexp!(out::AbstractArray, X::AbstractArray{<:Number}; corrected::Bool=true) = _throw_not_real()
 
-_logvarexp(X, ::Colon, corrected::Bool) = _finish_logvar(_centered_logsqdev(X, logmeanexp(X)), length(X), corrected)
-_logvarexp(X, dims, corrected::Bool) = logvarexp!(_reduced_similar(X, dims), X; corrected)
 
 """
 $(SIGNATURES)
@@ -77,12 +75,10 @@ Compute `log(std(exp, X; corrected))` in a numerically stable way.
 reduce over, returning `log.(std(exp.(X); dims, corrected))`.
 """
 logstdexp(X; corrected::Bool=true) = logvarexp(X; corrected) / 2
-logstdexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true) =
-    _halve!(logvarexp(X; dims, corrected))
+logstdexp(X::AbstractArray{<:Number}; dims=:, corrected::Bool=true) = _halve!(logvarexp(X; dims, corrected))
 
 # ---- internal helpers ----
 
-_log_count(R, n::Integer) = log(convert(real(float(eltype(R))), n))
 _reduced_count(X::AbstractArray, R) = isempty(R) ? 0 : length(X) ÷ length(R)
 _reduced_similar(X, dims) = similar(X, float(eltype(X)), Base.reduced_indices(axes(X), dims))
 
@@ -90,9 +86,6 @@ _halve!(v::Number) = v / 2
 _halve!(v::AbstractArray) = v ./= 2
 
 _throw_not_real() = throw(ArgumentError("logvarexp and logstdexp require real inputs"))
-
-_materialize(X) = collect(X)
-_materialize(X::Union{AbstractArray,Tuple,NamedTuple,AbstractRange}) = X
 
 _logsqdev_term(x::Real, logmean) = 2 * logsubexp(x, logmean)
 _logsqdev_term(x, logmean) = _throw_not_real()
