@@ -9,10 +9,12 @@ import LinearAlgebra
 export xlogx, xlogy, xlog1py, xexpx, xexpy, logistic, logit, log1psq, log1pexp, log1mexp, log2mexp, logexpm1,
     softplus, invsoftplus, log1pmx, logmxp1, logaddexp, logsubexp, logsumexp, logsumexp!, softmax,
     softmax!, logcosh, logabssinh, logabstanh, cloglog, cexpexp,
+    logmeanexp, logmeanexp!, logvarexp, logvarexp!, logstdexp, logstdexp!,
     loglogistic, logitexp, log1mlogistic, logit1mexp
 
 include("basicfuns.jl")
 include("logsumexp.jl")
+include("logstatsexp.jl")
 
 if !isdefined(Base, :get_extension)
     include("../ext/LogExpFunctionsChainRulesCoreExt.jl")
