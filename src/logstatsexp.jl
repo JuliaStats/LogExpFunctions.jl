@@ -12,15 +12,27 @@ over, returning `log.(mean(exp.(X); dims))`.
 See also [`logmeanexp!`](@ref).
 """
 function logmeanexp(X)
-    lse, n = _logsumexp_count(X)
-    return lse - log(oftype(lse, n))
+    next = iterate(X)
+    isnothing(next) && throw(ArgumentError("reducing over an empty collection is not allowed"))
+    x, state = next
+    acc = x
+    count = 1
+    while true
+        next = iterate(X, state)
+        isnothing(next) && break
+        x, state = next
+        acc = _logsumexp_onepass_op(acc, x)
+        count += 1
+    end
+    lse = _logsumexp_onepass_result(acc)
+    return lse - log(oftype(lse, count))
 end
 logmeanexp(X::AbstractArray{<:Number}; dims=:) = _logmeanexp(X, dims)
-function _logmeanexp(X, ::Colon)
+function _logmeanexp(X::AbstractArray{<:Number}, ::Colon)
     out = logsumexp(X)
     return out - oftype(out, log(length(X)))
 end
-function _logmeanexp(X, dims)
+function _logmeanexp(X::AbstractArray{<:Number}, dims)
     out = similar(X, float(eltype(X)), Base.reduced_indices(axes(X), dims))
     return logmeanexp!(out, X)
 end
@@ -49,7 +61,7 @@ passed as `logmean` to avoid recomputing it.
 See also [`logvarexp!`](@ref).
 """
 logvarexp(X::AbstractArray{<:Real}; dims=:, corrected::Bool=true, logmean=logmeanexp(X; dims)) = _logvarexp(X, dims, corrected, logmean)
-function _logvarexp(X::AbstractArray{<:Real}, dims::Colon, corrected::Bool, logmean)
+function _logvarexp(X::AbstractArray{<:Real}, ::Colon, corrected::Bool, logmean)
     out = logsumexp(2 .* logsubexp.(X, logmean))
     return out - oftype(out, log(max(0, length(X) - corrected)))
 end
@@ -91,22 +103,4 @@ result to `out`.
 function logstdexp!(out::AbstractArray{<:Real}, X::AbstractArray{<:Real}; corrected::Bool=true)
     logvarexp!(out, X; corrected)
     return out ./= 2
-end
-
-
-# internal function to do logsumexp over an iterator in one pass, returning also its length
-function _logsumexp_count(X)
-    next = iterate(X)
-    isnothing(next) && throw(ArgumentError("reducing over an empty collection is not allowed"))
-    x, state = next
-    acc = x
-    n = 1
-    while true
-        next = iterate(X, state)
-        isnothing(next) && break
-        x, state = next
-        acc = _logsumexp_onepass_op(acc, x)
-        n += 1
-    end
-    return _logsumexp_onepass_result(acc), n
 end
