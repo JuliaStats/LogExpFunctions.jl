@@ -22,6 +22,6 @@ include("with_logabsdet_jacobian.jl")
 
 # QA
 import JET
-JET.report_package("LogExpFunctions")
+JET.report_package(LogExpFunctions)
 import Aqua
 Aqua.test_all(LogExpFunctions)
