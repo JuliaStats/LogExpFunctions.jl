@@ -98,7 +98,9 @@ function _logsumexp_onepass_op(x1::T, x2::T) where {T<:Number}
         else
             # handle `x1 = x2 = ±Inf` correctly
             # checking inequalities above instead of equality fixes issue #59
-            x2, zero(x1 - x2)
+            # replacing only `NaN` keeps derivatives and imaginary parts at ties (#128)
+            d = x1 - x2
+            x2, isnan(d) ? zero(d) : d
         end
     end
     r = exp(a)
@@ -160,7 +162,9 @@ function _logsumexp_onepass_op(xmax1::T, xmax2::T, r1::R, r2::R) where {T<:Numbe
         else
             # handle `xmax1 = xmax2 = ±Inf` correctly
             # checking inequalities above instead of equality fixes issue #59
-            xmax2, r2 + (r1 + one(r1)) * exp(zero(xmax1 - xmax2))
+            # replacing only `NaN` keeps derivatives and imaginary parts at ties (#128)
+            d = xmax1 - xmax2
+            xmax2, r2 + (r1 + one(r1)) * exp(isnan(d) ? zero(d) : d)
         end
     end
     return xmax, r

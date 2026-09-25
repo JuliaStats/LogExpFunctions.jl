@@ -40,6 +40,27 @@ jobs:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+  ad:
+    name: AD - Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ github.event_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - '1'
+        os:
+          - ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: ${{ matrix.version }}
+      - uses: julia-actions/cache@v3
+      - run: |
+          julia --project=test/ad -e '
+            using Pkg
+            Pkg.instantiate()'
+      - run: julia --project=test/ad --check-bounds=yes test/ad/runtests.jl
   docs:
     name: Documentation
     runs-on: ubuntu-latest

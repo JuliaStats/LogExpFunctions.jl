@@ -10,6 +10,7 @@ updates:
       - "/"
       - "/docs"
       - "/test"
+      - "/test/ad"
     schedule:
       interval: "daily"
     groups:
