@@ -373,6 +373,10 @@ end
     @test isnan(logsumexp!(Complex{Float64}[1.0], Complex{Float64}[NaN * im, 9.0])[1])
     @test isnan(logsumexp!(Complex{Float64}[1.0], Complex{Float64}[NaN * im, Inf])[1])
     @test isnan(logsumexp!(Complex{Float64}[1.0], Complex{Float64}[NaN * im, -Inf])[1])
+    @test isnan(logsumexp(x for x in (NaN, 9.0)))
+    @test isnan(logsumexp(x for x in (Inf, NaN)))
+    @test isnan(logsumexp(x for x in (NaN, NaN)))
+    @test isnan(logsumexp(x for x in (NaN * im, 9.0)))
 
     # logsumexp with general iterables (issue #63)
     xs = range(-500, stop = 10, length = 1000)
@@ -387,6 +391,22 @@ end
     @test @inferred(logsumexp(xs; dims=2)) ≈ log.(sum(exp.(xs); dims=2))
     @test @inferred(logsumexp(xs; dims=[1, 2])) ≈ log(sum(exp.(xs); dims=[1, 2]))
     @test @inferred(logsumexp(x for x in xs)) == logsumexp(xs)
+
+    # issue #128
+    @testset "complex ties" begin
+        @test logsumexp(z for z in (0.0, im)) ≈ log(1 + exp(im))
+        # abstract eltype and > 1024 elements: combines partial sums
+        zs = Number[fill(0.0 + 0.0im, 1024); fill(im, 1024)]
+        @test logsumexp(zs) ≈ log(1024) + log(1 + exp(im))
+    end
+
+    @testset "infinite ties" begin
+        for x in (Inf, -Inf)
+            @test logsumexp(y for y in (x, x)) ≡ x
+            @test logsumexp(y for y in (x, x, 1.0)) ≡ max(x, 1.0)
+            @test logsumexp(Number[fill(x, 1024); fill(x, 1024)]) ≡ x
+        end
+    end
 
     # output arrays with abstract eltype
     xs = randn(2, 4)
