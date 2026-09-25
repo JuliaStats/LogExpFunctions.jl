@@ -6,10 +6,8 @@ updates:
     schedule:
       interval: "monthly"
   - package-ecosystem: "julia"
-    directories: # Location of Julia projects
+    directories: # Location of Julia projects (the workspace at "/" includes "/docs" and "/test")
       - "/"
-      - "/docs"
-      - "/test"
       - "/test/ad"
     schedule:
       interval: "daily"
