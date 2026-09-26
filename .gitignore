@@ -2,5 +2,8 @@
 *.jl.*.cov
 *.jl.mem
 Manifest.toml
+Manifest-v*.toml
+JuliaManifest.toml
+JuliaManifest-v*.toml
 /deps/deps.jl
 /docs/build
