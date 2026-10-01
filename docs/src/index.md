@@ -38,4 +38,10 @@ loglogistic
 logitexp
 log1mlogistic
 logit1mexp
+logmeanexp
+logmeanexp!
+logvarexp
+logvarexp!
+logstdexp
+logstdexp!
 ```

@@ -19,6 +19,7 @@ include("basicfuns.jl")
 include("chainrules.jl")
 include("inverse.jl")
 include("with_logabsdet_jacobian.jl")
+include("logstatsexp.jl")
 
 # QA
 import JET
