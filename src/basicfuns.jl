@@ -138,10 +138,11 @@ The implementation ensures `logcosh(-x) = logcosh(x)`.
 logcosh(x::Real) = _logcosh(float(x))
 
 # Generic fallback: for small `|x|`, `log(cosh(x)) = log1p(cosh(x) - 1) = log1p(2 sinh(x/2)^2)`
-# avoids the cancellation in `_logcosh_large` at any precision.
+# avoids the cancellation in `_logcosh_large` at any precision. For `|x| ≥ 2` that cancellation
+# costs less than one bit.
 function _logcosh(x::Real)
     abs_x = abs(x)
-    return abs_x < 1 ? log1p(2 * sinh(abs_x / 2)^2) : _logcosh_large(abs_x)
+    return abs_x < 2 ? log1p(2 * sinh(abs_x / 2)^2) : _logcosh_large(abs_x)
 end
 
 function _logcosh(x::Union{Float16, Float32, Float64})
@@ -154,7 +155,7 @@ _logcosh_large(abs_x::Real) = abs_x + log1pexp(-2 * abs_x) - IrrationalConstants
 _logcosh_large(abs_x::Float16) = Float16(_logcosh_large(Float32(abs_x)))
 
 """
-    logcosh_ker(x::Union{Float32, Float64})
+    logcosh_ker(x::Union{Float16, Float32, Float64})
 
 The kernel of `logcosh`.
 
@@ -327,7 +328,7 @@ end
 
 #=
 For common types we hard-code the thresholds to make absolutely sure they are not recomputed
-each time. Also, the thresholds are not elided by the compiler in Julia 1.0 / 1.6.
+each time.
 =#
 @inline _log1pexp_thresholds_negative(::Float64) = (-745.1332191019412, -36.7368005696771)
 @inline _log1pexp_thresholds_negative(::Float32) = (-103.97208f0, -16.635532f0)
@@ -415,7 +416,7 @@ $(SIGNATURES)
 Return `log(1 + x) - x`.
 
 Use naive calculation or range reduction outside kernel range.  Accurate ~2ulps for all `x`
-for `Float16`, `Float32`, and `Float64`. Other types use a series expansion for small `|x|`.
+for `Float16`, `Float32`, and `Float64`. Other types use a series expansion for `-2/3 < x < 2`.
 """
 log1pmx(x::Real) = _log1pmx(float(x))
 
