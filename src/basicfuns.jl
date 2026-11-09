@@ -271,12 +271,14 @@ log1pexp(x::Real) = _log1pexp(float(x)) # ensures that BigInt/BigFloat, Int/Floa
 # Approximations based on Maechler (2012)
 # Argument `x` is a floating point number due to the definition of `log1pexp` above
 function _log1pexp(x::Real)
-    x1, x2, x3, x4 = _log1pexp_thresholds(x)
+    x1, x2 = _log1pexp_thresholds_negative(x)
     if x < x1
         return zero(x)
     elseif x < x2
         return exp(x)
-    elseif x < x3
+    end
+    x3, x4 = _log1pexp_thresholds_positive(x)
+    if x < x3
         return log1p(exp(x))
     elseif x < x4
         return x + exp(-x)
@@ -290,7 +292,7 @@ thresholds is slow. Therefore prefer version without thresholds in this case. =#
 _log1pexp(x::BigFloat) = x > 0 ? x + log1p(exp(-x)) : log1p(exp(x))
 
 #=
-Returns thresholds x1, x2, x3, x4 such that:
+Thresholds x1 < x2 < x3 < x4 such that:
     * log1pexp(x) = 0 for x < x1
     * log1pexp(x) ≈ exp(x) for x < x2
     * log1pexp(x) ≈ log1p(exp(x)) for x2 ≤ x < x3
@@ -298,26 +300,41 @@ Returns thresholds x1, x2, x3, x4 such that:
     * log1pexp(x) ≈ x for x ≥ x4
 
 where the tolerances of the approximations are on the order of eps(typeof(x)).
+
+`_log1pexp_thresholds_negative(x)` returns the negative thresholds (x1, x2) and
+`_log1pexp_thresholds_positive(x)` the positive thresholds (x3, x4).
+`_logexpm1` (only defined for x ≥ 0) uses (x3, x4) as well, since the truncation errors of
+log(expm1(x)) ≈ x - exp(-x) and of log1pexp(x) ≈ x + exp(-x) are the same.
+
 For types for which `precision(x)` depends only on the type of `x`, the compiler
 should optimize away all computations done here.
 =#
-@inline function _log1pexp_thresholds(x::Real)
-    prec = precision(x)
+@inline function _log1pexp_thresholds_negative(x::Real)
     logtwo = oftype(x, IrrationalConstants.logtwo)
     x1 = (exponent(nextfloat(zero(x))) - 1) * logtwo
-    x2 = -prec * logtwo
+    x2 = -precision(x) * logtwo
+    return (x1, x2)
+end
+
+@inline function _log1pexp_thresholds_positive(x::Real)
+    prec = precision(x)
+    logtwo = oftype(x, IrrationalConstants.logtwo)
     x3 = (prec - 1) * logtwo / 2
-    x4 = -x2 - log(-x2) * (1 + 1 / x2) # approximate root of e^-x == x * ϵ/2 via asymptotics of Lambert's W function
-    return (x1, x2, x3, x4)
+    a = prec * logtwo # = -x2
+    x4 = a - log(a) * (1 - 1 / a) # approximate root of e^-x == x * ϵ/2 via asymptotics of Lambert's W function
+    return (x3, x4)
 end
 
 #=
 For common types we hard-code the thresholds to make absolutely sure they are not recomputed
-each time. Also, _log1pexp_thresholds is not elided by the compiler in Julia 1.0 / 1.6.
+each time. Also, the thresholds are not elided by the compiler in Julia 1.0 / 1.6.
 =#
-@inline _log1pexp_thresholds(::Float64) = (-745.1332191019412, -36.7368005696771, 18.021826694558577, 33.23111882352963)
-@inline _log1pexp_thresholds(::Float32) = (-103.97208f0, -16.635532f0, 7.9711924f0, 13.993f0)
-@inline _log1pexp_thresholds(::Float16) = (Float16(-17.33), Float16(-7.625), Float16(3.467), Float16(5.86))
+@inline _log1pexp_thresholds_negative(::Float64) = (-745.1332191019412, -36.7368005696771)
+@inline _log1pexp_thresholds_negative(::Float32) = (-103.97208f0, -16.635532f0)
+@inline _log1pexp_thresholds_negative(::Float16) = (Float16(-17.33), Float16(-7.625))
+@inline _log1pexp_thresholds_positive(::Float64) = (18.021826694558577, 33.23111882352963)
+@inline _log1pexp_thresholds_positive(::Float32) = (7.9711924f0, 13.993f0)
+@inline _log1pexp_thresholds_positive(::Float16) = (Float16(3.467), Float16(5.86))
 
 """
 $(SIGNATURES)
@@ -357,7 +374,7 @@ logexpm1(x::Real) = _logexpm1(float(x)) # ensures that Int/Float64 etc. dispatch
 # For x > 0, log(expm1(x)) = x + log1p(-exp(-x)) = x - exp(-x) - exp(-2x)/2 - ...
 # The truncation errors match those of `x + exp(-x)` in `_log1pexp`, so the same thresholds apply.
 function _logexpm1(x::Real)
-    _, _, x3, x4 = _log1pexp_thresholds(x)
+    x3, x4 = _log1pexp_thresholds_positive(x)
     if x < x3
         return log(expm1(x))
     elseif x < x4
@@ -414,19 +431,23 @@ _log1pmx(x::Float16) = Float16(_log1pmx(Float32(x)))
 
 # Generic fallback (e.g. BigFloat). With r = x / (x + 2) and t = r^2,
 #     log1p(x) - x = 2 atanh(r) - x = -r x + 2 r t ∑_{k ≥ 0} t^k / (2k + 3),
-# where both terms have the same sign, so there is no cancellation.
+# For x < 0 both terms have the same sign; for 0 < x < 2 the second term is at most ~10% of
+# the first in magnitude, so cancellation amplifies the relative error by at most ~1.11.
 function _log1pmx(x::Real)
-    if !(-0.425 < x < 0.4) # same range as for Float32/Float64
+    # The series is used for |r| < 1/2, i.e., -2/3 < x < 2. Outside of this range, the
+    # naive formula loses at most ~2 bits to cancellation, whereas the series converges
+    # slowly (t → 1 as x → -1 or x → ∞).
+    if !(-2 < 3 * x && x < 2)
         return log1p(x) - x
     end
     r = x / (x + 2)
     t = r * r
-    # Sum the series until adding a term does not change the result.
-    # Since t < 0.073, each term gains ≥ 3.7 bits, so this takes ≤ precision(x) / 3.7 steps;
-    # the upper bound only guards against types with non-IEEE semantics of `+`/`==`.
+    # Since t < 1/4, after N terms the remainder of the sum relative to s ≥ 1/3 is at most
+    # 4^-N / (2N + 5), so N = ⌈precision(x) / 2⌉ terms suffice.
+    # Stop early once adding a term does not change the result.
     s = inv(oftype(t, 3))
     tk = one(t)
-    for k in 1:precision(x)
+    for k in 1:cld(precision(x), 2)
         tk *= t
         s_new = s + tk / (2k + 3)
         s_new == s && break

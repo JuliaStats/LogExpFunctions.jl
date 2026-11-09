@@ -162,8 +162,9 @@ end
     end
 
     # hard-coded thresholds
-    for T in (Float16, Float32, Float64)
-        @test LogExpFunctions._log1pexp_thresholds(zero(T)) === invoke(LogExpFunctions._log1pexp_thresholds, Tuple{Real}, zero(T))
+    for T in (Float16, Float32, Float64),
+        f in (LogExpFunctions._log1pexp_thresholds_negative, LogExpFunctions._log1pexp_thresholds_positive)
+        @test f(zero(T)) === invoke(f, Tuple{Real}, zero(T))
     end
 
     # compare to accurate but slower implementation
@@ -260,6 +261,13 @@ end
 
     @test ulp_error_maximum(log1pmx, filter(>(-1), all_finite_float16())) < 1
     @test ulp_error_maximum(log1pmx, range(-0.99f0, 10f0; length = 10_000)) < 3
+
+    # generic implementation (series for -2/3 < x < 2, naive otherwise) with Float64
+    generic_log1pmx(x) = invoke(LogExpFunctions._log1pmx, Tuple{Real}, x)
+    @test ulp_error_maximum(generic_log1pmx, range(-0.99, 10.0; length = 10_000)) < 3
+    for x in (-2/3, prevfloat(-2/3), nextfloat(-2/3), 2.0, prevfloat(2.0), 1e-300, -1e-300)
+        @test ulp_error(generic_log1pmx, x) < 3
+    end
 end
 
 @testset "logmxp1" begin
@@ -293,8 +301,9 @@ end
         (logitexp, x -> log(exp(x) / (1 - exp(x))), "-" .* [small; "0.5"; "25"; "34"; "120"]),
         (logit1mexp, x -> log((1 - exp(x)) / exp(x)), "-" .* [small; "0.5"; "25"; "34"; "120"]),
         (logcosh, x -> log(cosh(x)), [small; "-" .* small; "0.5"; "0.9"; "1"; "40"]),
-        (log1pmx, x -> log1p(x) - x, [small; "-" .* small; "-0.9"; "-0.42"; "0.39"; "1"; "10"]),
-        (logmxp1, x -> log(x) - x + 1, ["1e-10"; "0.1"; "0.5"; "0.9"; "1.00000000000000000001"; "1.3"; "2"; "10"]),
+        # include points on both sides of the boundaries -2/3 and 2 of the series window
+        (log1pmx, x -> log1p(x) - x, [small; "-" .* small; "-0.9"; "-0.67"; "-0.66"; "-0.42"; "0.39"; "1"; "1.99"; "2.01"; "10"]),
+        (logmxp1, x -> log(x) - x + 1, ["1e-10"; "0.1"; "0.5"; "0.9"; "1.00000000000000000001"; "1.3"; "2"; "2.99"; "3.01"; "10"]),
     )
     # thresholds must follow the precision, not the type
     for prec in (256, 512), (f, ref, xs) in cases
