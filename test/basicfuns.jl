@@ -124,6 +124,8 @@ end
             @test ulp_error_maximum(logcosh, ran) < 3
             @test ulp_error_maximum(logabstanh, ran) < 3
         end
+        # exhaustive
+        @test ulp_error_maximum(logcosh, all_finite_float16()) < 1.5
     end
 end
 
@@ -212,6 +214,19 @@ end
         @test logexpm1(log1pexp(T(2)))  ≈  T(2)
         @test logexpm1(log1pexp(-T(2))) ≈ -T(2)
     end
+
+    @test @inferred(logexpm1(2)) === logexpm1(2.0)
+
+    # `expm1` overflows for Float16 inputs ≳ 11.09
+    @test logexpm1(Float16(11.5)) === Float16(11.5)
+    @test logexpm1(floatmax(Float16)) === floatmax(Float16)
+
+    # accuracy away from the root at x = log(2), where `log(expm1(x))` is inaccurate
+    away_from_root(x) = x > 0 && !(0.5 < x < 1)
+    @test ulp_error_maximum(logexpm1, filter(away_from_root, all_finite_float16())) < 3
+    for T in (Float32, Float64)
+        @test ulp_error_maximum(logexpm1, range(T(1), T(50); length = 10_000)) < 3
+    end
 end
 
 @testset "invsoftplus" begin
@@ -237,6 +252,14 @@ end
         @test log1pmx(Float32(x)) ≈ Float32(log1pmx(x)) atol=3*eps(Float32(x))
         @test log1pmx(x) ≈ Float64(log1pmx(big(x))) atol=3*eps(x)
     end
+
+    for T in (Int, Float16, Float32, Float64, BigFloat)
+        @test @inferred(log1pmx(T(2))) isa float(T)
+    end
+    @test log1pmx(1) === log1pmx(1.0)
+
+    @test ulp_error_maximum(log1pmx, filter(>(-1), all_finite_float16())) < 1
+    @test ulp_error_maximum(log1pmx, range(-0.99f0, 10f0; length = 10_000)) < 3
 end
 
 @testset "logmxp1" begin
@@ -250,6 +273,38 @@ end
 
     for x in 0.1:0.1:10
         @test logmxp1(Float32(x)) ≈ Float32(logmxp1(x))
+    end
+
+    for T in (Int, Float16, Float32, Float64, BigFloat)
+        @test @inferred(logmxp1(T(2))) isa float(T)
+    end
+    @test logmxp1(2) === logmxp1(2.0)
+
+    @test ulp_error_maximum(logmxp1, filter(>(0), all_finite_float16())) < 1
+    @test ulp_error_maximum(logmxp1, range(0.01f0, 10f0; length = 10_000)) < 3
+end
+
+# https://github.com/JuliaStats/LogExpFunctions.jl/issues/135
+@testset "BigFloat accuracy" begin
+    small = ["1e-100", "1e-30", "1e-10", "1e-3", "0.1"]
+    cases = (
+        (logexpm1, x -> log(expm1(x)), [small; "0.5"; "2"; "18.5"; "25"; "34"; "60"; "120"; "169"; "800"]),
+        (invsoftplus, x -> log(expm1(x)), [small; "25"; "34"; "120"]),
+        (logitexp, x -> log(exp(x) / (1 - exp(x))), "-" .* [small; "0.5"; "25"; "34"; "120"]),
+        (logit1mexp, x -> log((1 - exp(x)) / exp(x)), "-" .* [small; "0.5"; "25"; "34"; "120"]),
+        (logcosh, x -> log(cosh(x)), [small; "-" .* small; "0.5"; "0.9"; "1"; "40"]),
+        (log1pmx, x -> log1p(x) - x, [small; "-" .* small; "-0.9"; "-0.42"; "0.39"; "1"; "10"]),
+        (logmxp1, x -> log(x) - x + 1, ["1e-10"; "0.1"; "0.5"; "0.9"; "1.00000000000000000001"; "1.3"; "2"; "10"]),
+    )
+    # thresholds must follow the precision, not the type
+    for prec in (256, 512), (f, ref, xs) in cases
+        setprecision(BigFloat, prec) do
+            for s in xs
+                x = parse(BigFloat, s)
+                expected = setprecision(() -> ref(BigFloat(x; precision = 4 * prec)), BigFloat, 4 * prec)
+                @test abs(f(x) - expected) <= 4 * eps(BigFloat) * abs(expected)
+            end
+        end
     end
 end
 

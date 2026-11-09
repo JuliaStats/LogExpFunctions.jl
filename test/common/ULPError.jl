@@ -1,6 +1,9 @@
 module ULPError
 
-export ulp_error, ulp_error_maximum
+export ulp_error, ulp_error_maximum, all_finite_float16
+
+# All finite Float16 values (bit patterns of 0 to floatmax, and of their negatives, excluding -0)
+all_finite_float16() = reinterpret.(Float16, [0x0000:0x7bff; 0x8001:0xfbff])
 
 function ulp_error(accurate::AbstractFloat, approximate::AbstractFloat)
     # the ULP error is usually not required to great accuracy, so `Float32` should be precise enough
