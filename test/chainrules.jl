@@ -63,9 +63,10 @@
         test_frule(logistic, x; rtol=1f-3, atol=1f-3)
         test_rrule(logistic, x; rtol=1f-3, atol=1f-3)
     end
-    # derivative is accurate for large `|x|` in a relative sense (no cancellation)
+    # accuracy for large `|x|`
     for x in (40.0, -40.0, 30f0, -30f0)
-        ∂x = exp(-abs(x))
+        e = exp(-abs(big(x)))
+        ∂x = e / (1 + e)^2
         @test last(frule((NoTangent(), one(x)), logistic, x)) ≈ ∂x rtol=4*eps(typeof(x))
         @test last(last(rrule(logistic, x))(one(x))) ≈ ∂x rtol=4*eps(typeof(x))
     end
@@ -166,6 +167,24 @@
         @test Ω === Inf
         @test back(1.0) === (NoTangent(), ∂y, ∂x)
         @test last(frule((NoTangent(), 1.0, 0.0), f, Inf, 1.0)) === ∂x
+    end
+    # equal and `NaN` arguments (`x == y == ±Inf`: #61)
+    for T in (Float32, Float64)
+        for x in (T(-Inf), one(T), T(Inf))
+            _, back = rrule(logaddexp, x, x)
+            @test back(one(T)) === (NoTangent(), T(0.5), T(0.5))
+        end
+        # limits as `x` approaches `y` from above
+        for x in (T(-Inf), one(T))
+            _, back = rrule(logsubexp, x, x)
+            @test back(one(T)) === (NoTangent(), T(Inf), T(-Inf))
+        end
+        _, back = rrule(logsubexp, T(Inf), T(Inf))
+        @test all(isnan, back(one(T))[2:3])
+        for f in (logaddexp, logsubexp)
+            _, back = rrule(f, T(NaN), one(T))
+            @test all(isnan, back(one(T))[2:3])
+        end
     end
 
     for x in (randn(10), randn(10, 8)), dims in (:, 1, 1:2, 2)

@@ -114,13 +114,12 @@ function ChainRulesCore.rrule(::typeof(xexpy), x::Real, y::Real)
     return Ω, xexpy_pullback
 end
 
-# logistic'(x) = logistic(x) * logistic(-x) = e / (1 + e)^2 with e = exp(-|x|)
-# (avoids the cancellation in `1 - logistic(x)` for large `x`)
+# logistic(x) * logistic(-x), avoiding cancellation in `1 - logistic(x)`
 function _∂_logistic(x::Real)
     e = exp(-abs(x))
     return e / (1 + e)^2
 end
-# 2x / (1 + x^2), avoiding overflow of `x^2` for large `|x|`
+# avoid overflow of `x^2`
 _∂_log1psq(x::Real) = abs(x) < 1 ? 2 * x / (1 + x^2) : 2 / (x + inv(x))
 
 ChainRulesCore.@scalar_rule(logistic(x::Real), (_∂_logistic(x),))
@@ -140,18 +139,16 @@ ChainRulesCore.@scalar_rule(log1mlogistic(x::Real), (-logistic(x),))
 ChainRulesCore.@scalar_rule(logitexp(x::Real), (-inv(expm1(x)),))
 ChainRulesCore.@scalar_rule(logit1mexp(x::Real), (inv(expm1(x)),))
 
-# Both `logaddexp` and `logsubexp` satisfy f(x + c, y + c) = f(x, y) + c, hence ∂x + ∂y = 1.
-# The partial derivative `t` with respect to the smaller argument is computed directly,
-# the one with respect to the larger argument as `1 - t` (no cancellation since
-# 0 ≤ t ≤ 1/2 for `logaddexp` and t ≤ 0 for `logsubexp`).
-# The handling of `x == y` mirrors the primal implementations.
+# ∂x + ∂y = 1: `t` is the partial derivative with respect to the smaller argument
+# (0 ≤ t ≤ 1/2 for `logaddexp` and t ≤ 0 for `logsubexp`, so `1 - t` is accurate).
+# `x - y` is `NaN` if `x == y == ±Inf`.
 function _∂_logaddexp(x::Real, y::Real)
-    Δ = x == y ? zero(x - y) : abs(x - y)
+    Δ = x == y && isinf(x) ? zero(x - y) : abs(x - y)
     t = logistic(-Δ)
     return x >= y ? (1 - t, t) : (t, 1 - t)
 end
 function _∂_logsubexp(x::Real, y::Real)
-    Δ = x == y && (isfinite(x) || x < 0) ? zero(x - y) : abs(x - y)
+    Δ = x == y == -Inf ? zero(x - y) : abs(x - y)
     t = -inv(expm1(Δ))
     return x >= y ? (1 - t, t) : (t, 1 - t)
 end
