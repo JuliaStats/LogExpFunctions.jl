@@ -124,6 +124,8 @@ end
             @test ulp_error_maximum(logcosh, ran) < 3
             @test ulp_error_maximum(logabstanh, ran) < 3
         end
+        # exhaustive
+        @test ulp_error_maximum(logcosh, all_finite_float16()) < 1.5
     end
 end
 
@@ -160,8 +162,9 @@ end
     end
 
     # hard-coded thresholds
-    for T in (Float16, Float32, Float64)
-        @test LogExpFunctions._log1pexp_thresholds(zero(T)) === invoke(LogExpFunctions._log1pexp_thresholds, Tuple{Real}, zero(T))
+    for T in (Float16, Float32, Float64),
+        f in (LogExpFunctions._log1pexp_thresholds_negative, LogExpFunctions._log1pexp_thresholds_positive)
+        @test f(zero(T)) === invoke(f, Tuple{Real}, zero(T))
     end
 
     # compare to accurate but slower implementation
@@ -212,6 +215,19 @@ end
         @test logexpm1(log1pexp(T(2)))  ≈  T(2)
         @test logexpm1(log1pexp(-T(2))) ≈ -T(2)
     end
+
+    @test @inferred(logexpm1(2)) === logexpm1(2.0)
+
+    # `expm1` overflows for Float16 inputs ≳ 11.09
+    @test logexpm1(Float16(11.5)) === Float16(11.5)
+    @test logexpm1(floatmax(Float16)) === floatmax(Float16)
+
+    # accuracy away from the root at x = log(2), where `log(expm1(x))` is inaccurate
+    away_from_root(x) = x > 0 && !(0.5 < x < 1)
+    @test ulp_error_maximum(logexpm1, filter(away_from_root, all_finite_float16())) < 3
+    for T in (Float32, Float64)
+        @test ulp_error_maximum(logexpm1, range(T(1), T(50); length = 10_000)) < 3
+    end
 end
 
 @testset "invsoftplus" begin
@@ -237,6 +253,21 @@ end
         @test log1pmx(Float32(x)) ≈ Float32(log1pmx(x)) atol=3*eps(Float32(x))
         @test log1pmx(x) ≈ Float64(log1pmx(big(x))) atol=3*eps(x)
     end
+
+    for T in (Int, Float16, Float32, Float64, BigFloat)
+        @test @inferred(log1pmx(T(2))) isa float(T)
+    end
+    @test log1pmx(1) === log1pmx(1.0)
+
+    @test ulp_error_maximum(log1pmx, filter(>(-1), all_finite_float16())) < 1
+    @test ulp_error_maximum(log1pmx, range(-0.99f0, 10f0; length = 10_000)) < 3
+
+    # generic implementation (series for -2/3 < x < 2, naive otherwise) with Float64
+    generic_log1pmx(x) = invoke(LogExpFunctions._log1pmx, Tuple{Real}, x)
+    @test ulp_error_maximum(generic_log1pmx, range(-0.99, 10.0; length = 10_000)) < 3
+    for x in (-2/3, prevfloat(-2/3), nextfloat(-2/3), 2.0, prevfloat(2.0), 1e-300, -1e-300)
+        @test ulp_error(generic_log1pmx, x) < 3
+    end
 end
 
 @testset "logmxp1" begin
@@ -250,6 +281,84 @@ end
 
     for x in 0.1:0.1:10
         @test logmxp1(Float32(x)) ≈ Float32(logmxp1(x))
+    end
+
+    for T in (Int, Float16, Float32, Float64, BigFloat)
+        @test @inferred(logmxp1(T(2))) isa float(T)
+    end
+    @test logmxp1(2) === logmxp1(2.0)
+
+    @test ulp_error_maximum(logmxp1, filter(>(0), all_finite_float16())) < 1
+    @test ulp_error_maximum(logmxp1, range(0.01f0, 10f0; length = 10_000)) < 3
+end
+
+# https://github.com/JuliaStats/LogExpFunctions.jl/issues/135
+# All exported single-argument functions, on the grids of the issue plus points around the
+# thresholds and branch boundaries of the implementations.
+@testset "BigFloat accuracy" begin
+    # Inputs are decimal strings (parsed at the working precision) or functions returning a BigFloat
+    tobig(s::AbstractString) = parse(BigFloat, s)
+    tobig(f) = f()
+    neglogtwo = () -> -log(big(2))
+
+    small = ["1e-100", "1e-30", "1e-10", "1e-3", "0.1"]
+    neg_small = "-" .* small
+    wide = ["-1e5", "-800", "-40", "-1", "0", "1", "40", "800", "1e5"]
+    logexpm1_xs = [small; "0.5"; "1"; "2"; "18.5"; "25"; "34"; "40"; "60"; "120"; "169"; "800"; "1e5"]
+    logitexp_xs = Any["-1e5", "-800", "-120", "-40", "-34", "-25", "-1", neglogtwo, "-0.5", neg_small...]
+    # (function, naive definition used as reference, inputs)
+    cases = (
+        (xlogx, x -> iszero(x) ? zero(x) : x * log(x), ["0"; small; "0.5"; "1"; "2"; "1e10"; "1e100"]),
+        (xexpx, x -> x * exp(x), ["-1e100"; "-1e3"; "-10"; "-1"; neg_small; "0"; small; "1"; "10"; "500"]),
+        (logistic, x -> 1 / (1 + exp(-x)), ["-1e5"; "-800"; "-40"; "-1"; neg_small; "0"; small; "1"; "40"; "800"; "1e5"]),
+        (logit, x -> log(x / (1 - x)), ["1e-100", "1e-10", "0.1", "0.5", "0.50000000000000000001", "0.9", "0.9999999999", "0.999999999999999"]),
+        (log1psq, x -> log1p(x^2), ["0"; small; "1"; "10"; "1e10"; "1e100"]),
+        (log1pexp, x -> log1p(exp(x)), wide),
+        (log1mexp, x -> log1p(-exp(x)), ["-1e5"; "-800"; "-40"; "-1"; "-0.5"; neg_small]),
+        (log2mexp, x -> log(2 - exp(x)), Any["-1e5"; "-40"; "-1"; neg_small; "0"; small; "0.5"; () -> log(big(2)) - parse(BigFloat, "1e-20")]),
+        (logexpm1, x -> log(expm1(x)), logexpm1_xs),
+        (softplus, x -> log1p(exp(x)), wide),
+        (invsoftplus, x -> log(expm1(x)), logexpm1_xs),
+        # include points on both sides of the boundaries -2/3 and 2 of the series window
+        (log1pmx, x -> log1p(x) - x, ["-0.9"; "-0.67"; "-0.66"; "-0.5"; "-0.42"; neg_small; "0"; small; "0.39"; "0.5"; "1"; "1.99"; "2.01"; "10"; "1e10"]),
+        (logmxp1, x -> log(x) - x + 1, ["1e-10", "0.1", "0.5", "0.9", "0.99999999999999999999", "1", "1.00000000000000000001", "1.3", "2", "2.99", "3.01", "10", "1e10"]),
+        (logcosh, x -> log(cosh(x)), ["-1e5"; "-40"; "-1"; neg_small; "0"; small; "0.5"; "0.9"; "1"; "1.5"; "1.99"; "2.01"; "40"; "1e5"]),
+        (logabssinh, x -> log(abs(sinh(x))), ["-1e5"; "-40"; "-1"; neg_small; small; "1"; "40"; "1e5"]),
+        # `log(abs(tanh(x)))` rounds to zero for large `|x|` even at high precision
+        (logabstanh, x -> log1p(-2 / (exp(2 * abs(x)) + 1)), ["-1e5"; "-40"; "-1"; neg_small; small; "1"; "40"; "1e5"]),
+        (cloglog, x -> log(-log(1 - x)), ["1e-100", "1e-10", "0.1", "0.5", "0.9", "0.9999999999", "0.99999999999999999999"]),
+        # `1 - exp(-exp(x))` rounds to zero for very negative `x` even at high precision
+        (cexpexp, x -> -expm1(-exp(x)), ["-1e5", "-800", "-40", "-1", "0", "1", "5", "40"]),
+        (loglogistic, x -> -log1p(exp(-x)), wide),
+        (logitexp, x -> log(exp(x) / (1 - exp(x))), logitexp_xs),
+        (log1mlogistic, x -> -log1p(exp(x)), wide),
+        (logit1mexp, x -> log((1 - exp(x)) / exp(x)), logitexp_xs),
+    )
+    # The 512-bit pass catches algorithms tuned to a fixed precision.
+    # As in the issue, the tolerance is scaled by the condition number |x f'(x) / f(x)|, so that
+    # points near roots (e.g., `logitexp(-log(2))`) only test the algorithmic error.
+    for (f, ref, xs) in cases
+        @testset "$f" begin
+            for prec in (256, 512)
+                setprecision(BigFloat, prec) do
+                    for s in xs
+                        x = tobig(s)
+                        y = f(x)
+                        @test y isa BigFloat
+                        expected, cond = setprecision(BigFloat, 4 * prec) do
+                            xx = BigFloat(x; precision = 4 * prec)
+                            r = ref(xx)
+                            r, iszero(r) ? r : abs(xx * ForwardDiff.derivative(ref, xx) / r)
+                        end
+                        if iszero(expected)
+                            @test iszero(y)
+                        else
+                            @test abs(y - expected) <= 4 * eps(BigFloat) * abs(expected) * max(1, cond)
+                        end
+                    end
+                end
+            end
+        end
     end
 end
 
