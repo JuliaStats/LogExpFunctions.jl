@@ -119,7 +119,7 @@ function _∂_logistic(x::Real)
     e = exp(-abs(x))
     return e / (1 + e)^2
 end
-# avoid overflow of `x^2`
+# 2x / (1 + x^2), avoiding overflow of `x^2` for large `|x|`
 _∂_log1psq(x::Real) = abs(x) < 1 ? 2 * x / (1 + x^2) : 2 / (x + inv(x))
 
 ChainRulesCore.@scalar_rule(logistic(x::Real), (_∂_logistic(x),))
@@ -139,7 +139,9 @@ ChainRulesCore.@scalar_rule(log1mlogistic(x::Real), (-logistic(x),))
 ChainRulesCore.@scalar_rule(logitexp(x::Real), (-inv(expm1(x)),))
 ChainRulesCore.@scalar_rule(logit1mexp(x::Real), (inv(expm1(x)),))
 
-# ∂x + ∂y = 1: `t` is the partial derivative with respect to the smaller argument
+# the one with respect to the larger argument as `1 - t` (no cancellation since
+# 0 ≤ t ≤ 1/2 for `logaddexp` and t ≤ 0 for `logsubexp`).
+# The handling of `x == y` mirrors the primal implementations.
 # (0 ≤ t ≤ 1/2 for `logaddexp` and t ≤ 0 for `logsubexp`, so `1 - t` is accurate).
 # `x - y` is `NaN` if `x == y == ±Inf`.
 function _∂_logaddexp(x::Real, y::Real)

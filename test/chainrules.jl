@@ -63,7 +63,7 @@
         test_frule(logistic, x; rtol=1f-3, atol=1f-3)
         test_rrule(logistic, x; rtol=1f-3, atol=1f-3)
     end
-    # accuracy for large `|x|`
+    # derivative is accurate for large `|x|` in a relative sense (no cancellation)
     for x in (40.0, -40.0, 30f0, -30f0)
         e = exp(-abs(big(x)))
         ∂x = e / (1 + e)^2
