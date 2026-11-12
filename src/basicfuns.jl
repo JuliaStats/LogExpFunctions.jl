@@ -362,7 +362,50 @@ $(SIGNATURES)
 
 Return `log(2 - exp(x))` evaluated carefully.
 """
-log2mexp(x::Real) = log1p(-expm1(x))
+log2mexp(x::Real) = _log2mexp(float(x)) # ensures that Int/Float64 etc. dispatch to the same algorithm
+
+function _log2mexp(x::Real)
+    # Branch 1 computes log1p(u) with u = -expm1(x), which is better conditioned than
+    # log(1 + u) (branch 2) iff u ≥ -1/2, i.e., x ≤ log(3/2). Both branches lose some
+    # accuracy just past log(3/2), where u resp. 2 - exp(x) cross a power of two.
+    if x <= oftype(x, 0.4054651081081644)
+        return log1p(-expm1(x))
+    else
+        # The domain is x ≤ T(log(2)), as before. T(log(2)) can be larger than log(2) (e.g., Float32)
+        # but it is the value of `log(T(2))` and `log2mexp(T(-Inf))`, so it is mapped to -Inf.
+        hi = oftype(x, IrrationalConstants.logtwo)
+        # Use `>` such that NaN propagates (`min(NaN, 0)` is NaN)
+        if x > hi
+            _log2mexp_domainerror(x)
+        end
+        # log(2 - exp(x)) = log(-2 expm1(x - log(2))) is accurate if x - log(2) is accurate.
+        # For x ≤ hi, x - log(2) > 0 only if x == hi > log(2), which is clamped to 0 (result: -Inf).
+        return log(-2 * expm1(min(_minus_logtwo(x, hi), zero(x))))
+    end
+end
+
+# outlined for performance
+@noinline _log2mexp_domainerror(x) = throw(DomainError(x, "log2mexp(x) is only defined for x ≤ log(2)."))
+
+# x - log(2) with Cody-Waite argument reduction: For hi = T(log(2)) and x > log(3/2),
+# x - hi is exact (Sterbenz lemma), so only lo = log(2) - hi needs to be accurate
+_minus_logtwo(x::Real, hi::Real) = (x - hi) - _logtwo_lo(hi)
+
+# MPFR computes x - l with correct rounding, so it suffices to subtract a more precise log(2)
+function _minus_logtwo(x::BigFloat, ::BigFloat)
+    prec = precision(x) + precision(BigFloat) + 32
+    return x - BigFloat(IrrationalConstants.logtwo; precision = prec)
+end
+
+# lo = log(2) - hi for hi = T(log(2))
+# The hard-coded values for Float16, Float32, and Float64 are equal to the generic fallback
+function _logtwo_lo(hi::Real)
+    l = BigFloat(IrrationalConstants.logtwo; precision = 2 * precision(typeof(hi)) + 32)
+    return oftype(hi, l - hi)
+end
+_logtwo_lo(::Float64) = 2.3190468138462996e-17
+_logtwo_lo(::Float32) = -1.9046542f-9
+_logtwo_lo(::Float16) = Float16(-0.0002122)
 
 """
 $(SIGNATURES)
