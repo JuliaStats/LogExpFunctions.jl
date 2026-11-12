@@ -205,6 +205,11 @@ end
         @test @inferred(log2mexp(T(0))) isa T
         @test iszero(log2mexp(T(0)))
         @test log2mexp(-T(1)) ≈ log(2 - exp(-T(1)))
+        for m in 1:5
+            x = log(T(2))
+            x -= ldexp(eps(x), m)
+            @test log2mexp(x) ≈ T(log2mexp(BigFloat(x)))
+        end
     end
 end
 

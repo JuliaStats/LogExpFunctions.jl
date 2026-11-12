@@ -262,7 +262,7 @@ This is also called the ["softplus"](https://en.wikipedia.org/wiki/Rectifier_(ne
 transformation, being a smooth approximation to `max(0,x)`. Its inverse is [`logexpm1`](@ref).
 
 This is also called the ["softplus"](https://en.wikipedia.org/wiki/Rectifier_(neural_networks))
-transformation (in its default parametrization, see [`softplus`](@ref)), being a smooth approximation to `max(0,x)`. 
+transformation (in its default parametrization, see [`softplus`](@ref)), being a smooth approximation to `max(0,x)`.
 
 See:
  * Martin Maechler (2012) [“Accurately Computing log(1 − exp(− |a|))”](http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf)
@@ -364,6 +364,27 @@ Return `log(2 - exp(x))` evaluated carefully.
 """
 log2mexp(x::Real) = log1p(-expm1(x))
 
+# Split log(2) into hi + lo, where hi = T(log 2) and lo is the rounding residual in T.
+Base.@assume_effects :foldable function _log2_hilo(::Type{T}) where {T<:AbstractFloat}
+    setprecision(BigFloat, 4 * precision(T) + 64) do
+        l2 = log(BigFloat(2))
+        hi = T(l2)
+        lo = T(l2 - BigFloat(hi))
+        return hi, lo
+    end
+end
+
+function log2mexp(x::T) where {T<:Union{Float16,Float32,Float64}}
+    if x > T(0.5)
+        log2_hi, log2_lo = _log2_hilo(T)
+        d = (log2_hi - x) + log2_lo          # log(2) - x, accurate to ~eps relative
+        d < 0 && return T(NaN)               # x > log(2): outside the domain
+        return log(-2 * expm1(-d))           # d == 0 gives -Inf
+    else
+        return log1p(-expm1(x))              # generic method, fine away from log(2)
+    end
+end
+
 """
 $(SIGNATURES)
 
@@ -391,8 +412,8 @@ _logexpm1(x::BigFloat) = x > 1 ? x + log1p(-exp(-x)) : log(expm1(x))
 """
 $(SIGNATURES)
 
-The generalized `softplus` function (Wiemann et al., 2024) takes an additional optional parameter `a` that control 
-the approximation error with respect to the linear spline. It defaults to `a=1.0`, in which case the softplus is 
+The generalized `softplus` function (Wiemann et al., 2024) takes an additional optional parameter `a` that control
+the approximation error with respect to the linear spline. It defaults to `a=1.0`, in which case the softplus is
 equivalent to [`log1pexp`](@ref).
 
 See:
