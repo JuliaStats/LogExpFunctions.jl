@@ -206,6 +206,64 @@ end
         @test iszero(log2mexp(T(0)))
         @test log2mexp(-T(1)) ≈ log(2 - exp(-T(1)))
     end
+    @test @inferred(log2mexp(0)) === log2mexp(0.0)
+    @test @inferred(log2mexp(1//2)) === log2mexp(0.5)
+
+    # hard-coded values of lo = log(2) - T(log(2))
+    for T in (Float16, Float32, Float64)
+        hi = log(T(2))
+        @test LogExpFunctions._logtwo_lo(hi) === invoke(LogExpFunctions._logtwo_lo, Tuple{Real}, hi)
+    end
+
+    # https://github.com/JuliaStats/LogExpFunctions.jl/issues/102
+    @test ulp_error_maximum(log2mexp, filter(<=(log(big(2))), all_finite_float16())) < 1.5
+    for (T, tol) in ((Float32, 1.5), (Float64, 2))
+        # largest floating point number ≤ log(2)
+        top = log(T(2)) <= log(big(2)) ? log(T(2)) : prevfloat(log(T(2)))
+        @test ulp_error_maximum(log2mexp, (prevfloat(top, k) for k in 0:1999)) < 1
+        @test ulp_error_maximum(log2mexp, range(T(log(1.5)), top; length = 10_000)) < tol
+        @test ulp_error_maximum(log2mexp, range(T(-20), T(0.5); length = 10_000)) < tol
+    end
+
+    # special values and domain boundary
+    for T in (Float16, Float32, Float64)
+        hi = log(T(2))
+        @test isnan(log2mexp(T(NaN)))
+        @test log2mexp(T(-Inf)) === hi
+        @test_throws DomainError log2mexp(T(Inf))
+        @test_throws DomainError log2mexp(T(1))
+        @test_throws DomainError log2mexp(nextfloat(hi))
+        if hi > log(big(2))
+            # Float16 and Float32: T(log(2)) is mapped to the boundary, as before
+            @test log2mexp(hi) === T(-Inf)
+            @test log2mexp(log2mexp(T(-Inf))) === T(-Inf)
+        else
+            # Float64: T(log(2)) is in the domain
+            @test isfinite(log2mexp(hi))
+            @test ulp_error(log2mexp, hi) < 1
+        end
+    end
+
+    # BigFloat close to log(2) and to the branch threshold log(3/2)
+    for prec in (64, 113, 256, 1000)
+        setprecision(BigFloat, prec) do
+            l2 = log(big(2))
+            l15 = log(big(1.5))
+            t = big(0.4054651081081644)
+            xs = [
+                prevfloat(l2, 1), prevfloat(l2, 3), prevfloat(l2, 1000),
+                prevfloat(l15), l15, nextfloat(l15), prevfloat(t), t, nextfloat(t),
+            ]
+            for x in xs
+                expected = setprecision(BigFloat, 4 * prec) do
+                    log(2 - exp(BigFloat(x; precision = 4 * prec)))
+                end
+                y = @inferred(log2mexp(x))
+                @test y isa BigFloat
+                @test abs(y - expected) <= 2 * eps(y)
+            end
+        end
+    end
 end
 
 @testset "logexpm1" begin
