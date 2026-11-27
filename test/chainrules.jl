@@ -63,6 +63,7 @@
         test_frule(logistic, x; rtol=1f-3, atol=1f-3)
         test_rrule(logistic, x; rtol=1f-3, atol=1f-3)
     end
+
     # derivative is accurate for large `|x|` in a relative sense (no cancellation)
     for x in (40.0, -40.0, 30f0, -30f0)
         e = exp(-abs(big(x)))
@@ -129,6 +130,55 @@
     test_scalar(log1pmx, rand())
 
     test_scalar(logmxp1, 0.5 + rand())
+
+    @testset "log1pdiv and expm1div" begin
+        test_scalar(log1pdiv, rand())
+        test_scalar(expm1div, rand())
+
+        ∂log1pdiv(x) = last(frule((NoTangent(), one(x)), log1pdiv, x))
+        ∂expm1div(x) = last(frule((NoTangent(), one(x)), expm1div, x))
+        ∂ref_log1pdiv(x) = setprecision(BigFloat, 4000) do
+            xb = BigFloat(x)
+            (xb / (1 + xb) - log1p(xb)) / xb^2
+        end
+        ∂ref_expm1div(x) = setprecision(BigFloat, 4000) do
+            xb = BigFloat(x)
+            (exp(xb) * (xb - 1) + 1) / xb^2
+        end
+
+        # the removable singularity at `x = 0`, where differentiating the primal gives `NaN`
+        @test ∂log1pdiv(0.0) === -0.5
+        @test ∂expm1div(0.0) === 0.5
+        for x in (1e-16, -1e-16, 1e-10, -1e-10, 1e-4, -1e-4, 0.7, -0.7, 2.0, 10.0)
+            @test ∂log1pdiv(x) ≈ ∂ref_log1pdiv(x) rtol = 4 * eps()
+            @test ∂expm1div(x) ≈ ∂ref_expm1div(x) rtol = 4 * eps()
+        end
+        for x in (-2.0, -10.0)  # `log1pdiv` is not defined for `x ≤ -1`
+            @test ∂expm1div(x) ≈ ∂ref_expm1div(x) rtol = 4 * eps()
+        end
+
+        # reverse mode agrees with forward mode
+        for f in (log1pdiv, expm1div), x in (0.0, 1e-10, 0.7, 10.0)
+            @test last(last(rrule(f, x))(1.0)) ≈ last(frule((NoTangent(), 1.0), f, x))
+        end
+
+        # ULP accuracy on grids, including near the singularities; the closed forms lose a
+        # few ulps to cancellation
+        for T in (Float16, Float32, Float64)
+            xs = filter(isfinite, vcat(exp10.(range(T(-3), T(3); length = 200)),
+                                       -exp10.(range(T(-3), T(3); length = 200)),
+                                       T[0, 1e-4, 0.5, 0.7, 2, 10, 100]))
+            for x in xs
+                for (f, ∂f, ∂ref) in ((log1pdiv, ∂log1pdiv, ∂ref_log1pdiv),
+                                      (expm1div, ∂expm1div, ∂ref_expm1div))
+                    f === log1pdiv && !(x > -1) && continue
+                    rT = T(∂ref(x))
+                    (isfinite(rT) && !iszero(rT)) || continue
+                    @test ulp_error(BigFloat(rT), ∂f(x)) < 6
+                end
+            end
+        end
+    end
 
     for x in (-randexp(), randexp()), y in (-randexp(), randexp())
         test_frule(logaddexp, x, y)

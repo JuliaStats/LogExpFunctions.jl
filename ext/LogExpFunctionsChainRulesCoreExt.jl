@@ -122,6 +122,51 @@ end
 # 2x / (1 + x^2), avoiding overflow of `x^2` for large `|x|`
 _∂_log1psq(x::Real) = abs(x) < 1 ? 2 * x / (1 + x^2) : 2 / (x + inv(x))
 
+# `(x / (1 + x) - log1p(x)) / x^2`, with the limit `-1/2` at `x = 0`. The direct form
+# cancels for small `|x|`, so a series is used there. For `|x| ≥ 1/2` the numerator is
+# `logmxp1(1 / (1 + x))` (`log(y) - y + 1` at `y = 1 / (1 + x)`), which is accurate; `/ x / x`
+# avoids the overflow of `x^2`.
+function _∂_log1pdiv(x::Real)
+    if abs(x) < 0.5
+        # `-1/2 + 2x/3 - 3x^2/4 + …` = ∑_{k ≥ 0} (-1)^(k + 1) (k + 1) x^k / (k + 2)
+        s = -one(x) / 2
+        p = one(x)
+        for k in 1:precision(x)
+            p *= x
+            term = oftype(x, k + 1) / oftype(x, k + 2) * p
+            s_new = isodd(k) ? s + term : s - term
+            s_new == s && break
+            s = s_new
+        end
+        return s
+    end
+    return logmxp1(inv(1 + x)) / x / x
+end
+
+# `((exp(x) - 1) (x - 1) + x) / x^2`, with the limit `1/2` at `x = 0`. The closed forms
+# cancel near `0` and for `x < 0` up to `|x| ≈ 2`, where a series is used. For `x ≥ 2` the
+# `exp(x) = exp(x/2)^2` factorization keeps the result finite for as long as it is
+# representable, even where `exp(x)` itself overflows.
+function _∂_expm1div(x::Real)
+    if abs(x) < 2
+        # `1/2 + x/3 + x^2/8 + …` = ∑_{k ≥ 0} (k + 1) x^k / (k + 2)!
+        s = one(x) / 2
+        t = s
+        for k in 1:precision(x)
+            t *= x / oftype(x, k + 2)
+            term = oftype(x, k + 1) * t
+            s_new = s + term
+            s_new == s && break
+            s = s_new
+        end
+        return s
+    elseif x > 0
+        h = exp(x / 2)
+        return h * ((x - 1) / x) * (h / x) + inv(x)^2
+    end
+    return (exp(x) * (x - 1) + one(x)) / x / x
+end
+
 ChainRulesCore.@scalar_rule(logistic(x::Real), (_∂_logistic(x),))
 ChainRulesCore.@scalar_rule(logit(x::Real), (inv(x * (1 - x)),))
 ChainRulesCore.@scalar_rule(logcosh(x::Real), tanh(x))
@@ -134,6 +179,8 @@ ChainRulesCore.@scalar_rule(log2mexp(x::Real), (-exp(x - Ω),))
 ChainRulesCore.@scalar_rule(logexpm1(x::Real), (-inv(expm1(-x)),))
 ChainRulesCore.@scalar_rule(log1pmx(x::Real), (-x / (x + 1),))
 ChainRulesCore.@scalar_rule(logmxp1(x::Real), ((1 - x) / x,))
+ChainRulesCore.@scalar_rule(log1pdiv(x::Real), (_∂_log1pdiv(float(x)),))
+ChainRulesCore.@scalar_rule(expm1div(x::Real), (_∂_expm1div(float(x)),))
 ChainRulesCore.@scalar_rule(loglogistic(x::Real), (logistic(-x),))
 ChainRulesCore.@scalar_rule(log1mlogistic(x::Real), (-logistic(x),))
 ChainRulesCore.@scalar_rule(logitexp(x::Real), (-inv(expm1(x)),))

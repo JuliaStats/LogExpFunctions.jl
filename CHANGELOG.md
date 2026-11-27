@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - add `log1pdiv` and `expm1div`
-
+- add `ChainRulesCore` rules for `log1pdiv` and `expm1div`
 
 ## 1.0.1
 
