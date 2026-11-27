@@ -7,7 +7,7 @@ import IrrationalConstants
 import LinearAlgebra
 
 export xlogx, xlogy, xlog1py, xexpx, xexpy, logistic, logit, log1psq, log1pexp, log1mexp, log2mexp, logexpm1,
-    softplus, invsoftplus, log1pmx, logmxp1, logaddexp, logsubexp, logsumexp, logsumexp!, softmax,
+    softplus, invsoftplus, log1pmx, logmxp1, log1pdiv, expm1div, logaddexp, logsubexp, logsumexp, logsumexp!, softmax,
     softmax!, logcosh, logabssinh, logabstanh, cloglog, cexpexp,
     loglogistic, logitexp, log1mlogistic, logit1mexp
 

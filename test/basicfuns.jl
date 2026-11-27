@@ -350,6 +350,73 @@ end
     @test ulp_error_maximum(logmxp1, range(0.01f0, 10f0; length = 10_000)) < 3
 end
 
+@testset "log1pdiv and expm1div" begin
+    @test log1pdiv(0) === 1.0
+    @test log1pdiv(-0.0) === 1.0
+    @test log1pdiv(1) ≈ log(2)
+    @test log1pdiv(-0.5) ≈ -2 * log(0.5)
+    @test log1pdiv(-1) === Inf
+
+    @test expm1div(0) === 1.0
+    @test expm1div(-0.0) === 1.0
+    @test expm1div(1) ≈ expm1(1)
+    @test expm1div(-1) ≈ 1 - exp(-1)
+
+    for T in (Int, Float16, Float32, Float64, BigFloat)
+        @test @inferred(log1pdiv(T(2))) isa float(T)
+        @test @inferred(expm1div(T(2))) isa float(T)
+    end
+    @test log1pdiv(1) === log1pdiv(1.0)
+    @test expm1div(1) === expm1div(1.0)
+
+    # special values
+    for T in (Float16, Float32, Float64)
+        @test log1pdiv(zero(T)) === one(T)
+        @test log1pdiv(-zero(T)) === one(T)
+        @test log1pdiv(T(Inf)) === zero(T)
+        @test log1pdiv(-one(T)) === T(Inf)
+        @test isnan(log1pdiv(T(NaN)))
+        @test_throws DomainError log1pdiv(T(-2))
+
+        @test expm1div(zero(T)) === one(T)
+        @test expm1div(-zero(T)) === one(T)
+        @test expm1div(T(Inf)) === T(Inf)
+        @test expm1div(T(-Inf)) === zero(T)
+        @test isnan(expm1div(T(NaN)))
+    end
+
+    # accuracy
+    @test ulp_error_maximum(log1pdiv, filter(>(-1), all_finite_float16())) < 2
+    # `expm1(x)` overflows for Float16 inputs ≳ 11.09, but the ratio is representable further
+    @test ulp_error_maximum(expm1div, filter(<(Float16(13)), all_finite_float16())) < 3
+    for T in (Float32, Float64)
+        @test ulp_error_maximum(log1pdiv, range(T(-0.99), T(100); length = 10_000)) < 2
+        @test ulp_error_maximum(expm1div, range(T(-100), T(80); length = 10_000)) < 2
+    end
+    # values approaching the singularity at `x = -1` (`log1pdiv`) and at `x = 0` (both), which
+    # the uniform grids above do not reach; `Float16` is covered exhaustively
+    for T in (Float32, Float64)
+        @test ulp_error_maximum(log1pdiv, (-prevfloat(one(T), k) for k in 1:2000)) < 2
+    end
+    for (T, lo) in ((Float32, Float32(-38)), (Float64, Float64(-300)))
+        xs = vcat(exp10.(range(lo, T(-1); length = 10_000)),
+                  [nextfloat(zero(T)), floatmin(T), floatmin(T) * 3])
+        for s in (1, -1)
+            @test ulp_error_maximum(expm1div, (s * x for x in xs)) < 2
+            @test ulp_error_maximum(log1pdiv, (s * x for x in xs)) < 2
+        end
+    end
+    # `expm1(x)` overflows, while `expm1(x) / x` is still representable
+    for (T, lo, hi) in ((Float16, Float16(11.5), Float16(13.5)),
+                        (Float32, 89.0f0, 93.0f0),
+                        (Float64, 710.0, 715.0))
+        for x in range(lo, hi; length = 1000)
+            @test isfinite(expm1div(x))
+            @test expm1div(x) ≈ exp(BigFloat(x)) / x rtol = 4 * eps(T)
+        end
+    end
+end
+
 # https://github.com/JuliaStats/LogExpFunctions.jl/issues/135
 # All exported single-argument functions, on the grids of the issue plus points around the
 # thresholds and branch boundaries of the implementations.
@@ -380,6 +447,8 @@ end
         # include points on both sides of the boundaries -2/3 and 2 of the series window
         (log1pmx, x -> log1p(x) - x, ["-0.9"; "-0.67"; "-0.66"; "-0.5"; "-0.42"; neg_small; "0"; small; "0.39"; "0.5"; "1"; "1.99"; "2.01"; "10"; "1e10"]),
         (logmxp1, x -> log(x) - x + 1, ["1e-10", "0.1", "0.5", "0.9", "0.99999999999999999999", "1", "1.00000000000000000001", "1.3", "2", "2.99", "3.01", "10", "1e10"]),
+        (log1pdiv, x -> log1p(x) / x, ["-0.9"; "-0.5"; neg_small; small; "0.5"; "1"; "2"; "10"; "1e5"]),
+        (expm1div, x -> expm1(x) / x, ["-700"; "-10"; "-1"; neg_small; small; "0.5"; "1"; "10"; "700"]),
         (logcosh, x -> log(cosh(x)), ["-1e5"; "-40"; "-1"; neg_small; "0"; small; "0.5"; "0.9"; "1"; "1.5"; "1.99"; "2.01"; "40"; "1e5"]),
         (logabssinh, x -> log(abs(sinh(x))), ["-1e5"; "-40"; "-1"; neg_small; small; "1"; "40"; "1e5"]),
         # `log(abs(tanh(x)))` rounds to zero for large `|x|` even at high precision
