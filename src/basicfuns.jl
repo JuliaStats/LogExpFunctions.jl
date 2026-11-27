@@ -262,7 +262,7 @@ This is also called the ["softplus"](https://en.wikipedia.org/wiki/Rectifier_(ne
 transformation, being a smooth approximation to `max(0,x)`. Its inverse is [`logexpm1`](@ref).
 
 This is also called the ["softplus"](https://en.wikipedia.org/wiki/Rectifier_(neural_networks))
-transformation (in its default parametrization, see [`softplus`](@ref)), being a smooth approximation to `max(0,x)`. 
+transformation (in its default parametrization, see [`softplus`](@ref)), being a smooth approximation to `max(0,x)`.
 
 See:
  * Martin Maechler (2012) [“Accurately Computing log(1 − exp(− |a|))”](http://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf)
@@ -434,8 +434,8 @@ _logexpm1(x::BigFloat) = x > 1 ? x + log1p(-exp(-x)) : log(expm1(x))
 """
 $(SIGNATURES)
 
-The generalized `softplus` function (Wiemann et al., 2024) takes an additional optional parameter `a` that control 
-the approximation error with respect to the linear spline. It defaults to `a=1.0`, in which case the softplus is 
+The generalized `softplus` function (Wiemann et al., 2024) takes an additional optional parameter `a` that control
+the approximation error with respect to the linear spline. It defaults to `a=1.0`, in which case the softplus is
 equivalent to [`log1pexp`](@ref).
 
 See:
@@ -560,6 +560,63 @@ function _log1pmx_ker(x::T) where T <: Union{Float32, Float64}
     w = evalpoly(t, p)
     hxsq = x*x/2
     muladd(r, muladd(w, t, hxsq), -hxsq)
+end
+
+
+"""
+$(SIGNATURES)
+
+Return `log(1 + x) / x`, computed carefully.
+
+The result is finite wherever the mathematical value is representable in the same type.
+
+The function is defined for `x > -1`; `x = -1` returns `Inf`, and `x < -1` throws a
+`DomainError`. For `x = 0` the limit `1` is returned, while for `x = Inf` the value is
+the limit `0`.
+
+```jldoctest
+julia> log1pdiv(0)
+1.0
+
+julia> log1pdiv(1)
+0.6931471805599453
+```
+"""
+log1pdiv(x::Real) = _log1pdiv(float(x))
+
+function _log1pdiv(x::Real)
+    iszero(x) && return one(x)
+    x == Inf && return zero(x)
+    return log1p(x) / x
+end
+
+"""
+$(SIGNATURES)
+
+Return `(exp(x) - 1) / x`, computed carefully.
+
+The result is finite wherever the mathematical value is representable in the same type.
+
+For `x = 0` the limit `1` is returned, for `x = Inf`, the limit `Inf` is used.
+
+```jldoctest
+julia> expm1div(0)
+1.0
+
+julia> expm1div(1)
+1.7182818284590453
+```
+"""
+expm1div(x::Real) = _expm1div(float(x))
+
+function _expm1div(x::Real)
+    iszero(x) && return one(x)
+    x == Inf && return x
+    y = expm1(x) / x
+    isfinite(y) && return y
+    # `expm1(x)` overflows for large `x`, but `expm1(x) / x` may still be finite
+    h = x / 2
+    return (expm1(h) / h) * ((exp(h) + one(x)) / 2)
 end
 
 

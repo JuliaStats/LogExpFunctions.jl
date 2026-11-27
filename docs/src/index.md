@@ -26,6 +26,8 @@ log2mexp
 logexpm1
 log1pmx
 logmxp1
+log1pdiv
+expm1div
 logaddexp
 logsubexp
 logsumexp
